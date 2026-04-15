@@ -15,6 +15,7 @@
     "jsx": "react-jsx",
     "incremental": true,
     "forceConsistentCasingInFileNames": true,
+    "types": ["navermaps"],
     "plugins": [
       {
         "name": "next"
