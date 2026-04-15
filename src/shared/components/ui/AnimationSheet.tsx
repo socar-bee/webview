@@ -1,0 +1,274 @@
+'use client'
+
+import { AnimatePresence, motion, type PanInfo, useMotionValue, useTransform } from 'framer-motion'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+export type SheetSnap = 'peek' | 'half' | 'full'
+
+interface AnimationSheetProps {
+  /** 시트 열림 여부 (false면 화면 밖으로 닫힘) */
+  isOpen: boolean
+  /** 현재 snap 상태 */
+  snap: SheetSnap
+  /** snap 전환 콜백 (드래그/클릭 등 내부 인터랙션으로 변경 시 호출) */
+  onSnapChange: (snap: SheetSnap) => void
+  /** 백드롭 클릭 or 시트 peek 아래로 드래그 시 호출 */
+  onClose?: () => void
+  /** peek 상태 노출 높이(px) */
+  peekHeight?: number
+  /** half 상태가 뷰포트에서 차지하는 비율 (0~1) */
+  halfRatio?: number
+  /** peek bar — 모든 snap에서 시트 최상단에 고정 노출 */
+  peek: React.ReactNode
+  /** full 상태일 때 peek 위로 올라오는 navigation bar (뒤로가기 등). full이 아닐 땐 숨김 */
+  navigationBar?: React.ReactNode
+  /** 본문 (스크롤 가능). full 상태에서만 스크롤 활성화 */
+  children: React.ReactNode
+}
+
+// iOS 계열 바텀시트 느낌: critical damping(ratio=1.0)로 튕김 없이 타이트하게 정착
+// ζ = damping / (2 * sqrt(stiffness * mass)) = 40 / (2 * sqrt(400)) = 1.0
+const SPRING = { type: 'spring' as const, damping: 40, stiffness: 400, mass: 1 }
+const VELOCITY_THRESHOLD = 500
+
+/**
+ * framer-motion 기반 3-snap 바텀시트.
+ * - peek: 고정 높이만 노출 (지도 인터랙션 유지, 백드롭 없음)
+ * - half: 뷰포트 비율만큼 노출 (백드롭 dim 시작)
+ * - full: 전체 노출 (navigationBar 올라옴, 백드롭 최대)
+ */
+export default function AnimationSheet({
+  isOpen,
+  snap,
+  onSnapChange,
+  onClose,
+  peekHeight = 92,
+  halfRatio = 0.45,
+  peek,
+  navigationBar,
+  children
+}: AnimationSheetProps) {
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const peekSectionRef = useRef<HTMLDivElement>(null)
+  // 초기치를 뷰포트 바로 아래로 두면 open 시 peek까지의 이동거리가 짧아져서
+  // spring 오버슈트/튕김이 거의 보이지 않는다. (9999처럼 너무 멀면 거리가 길어 튀어보임)
+  const y = useMotionValue(typeof window === 'undefined' ? 9999 : window.innerHeight)
+  // SSR 안전: 클라이언트에서는 mount 첫 렌더부터 실제 뷰포트 높이를 갖도록
+  // (0으로 시작하면 getSnapY가 0을 반환해 첫 프레임에 시트가 top으로 튐)
+  const [vh, setVh] = useState(() => (typeof window === 'undefined' ? 0 : window.innerHeight))
+  const [bottomOffset, setBottomOffset] = useState(() => {
+    if (typeof window === 'undefined') return 0
+    const val = getComputedStyle(document.documentElement).getPropertyValue('--dock-height').trim()
+    const num = parseFloat(val)
+    return Number.isFinite(num) ? num : 0
+  })
+  // 실제 peek 섹션(handle + peek bar)의 렌더링 높이. peekHeight prop은 fallback으로만 사용.
+  const [measuredPeekHeight, setMeasuredPeekHeight] = useState(peekHeight)
+
+  /** 시트가 실제로 차지할 수 있는 세로 영역 (viewport - dock) */
+  const sheetHeight = Math.max(vh - bottomOffset, 0)
+
+  /** snap → y(px) 매핑. 시트 자체 높이는 sheetHeight. dock 영역은 항상 비워둠. */
+  const getSnapY = useCallback(
+    (target: SheetSnap) => {
+      if (target === 'full') return 0
+      if (target === 'half') return Math.round(sheetHeight * (1 - halfRatio))
+      return Math.max(sheetHeight - measuredPeekHeight, 0)
+    },
+    [halfRatio, measuredPeekHeight, sheetHeight]
+  )
+
+  // 뷰포트 높이 초기화 및 리사이즈 대응
+  useEffect(() => {
+    const update = () => setVh(window.innerHeight)
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
+
+  // DockBar가 :root에 셋해주는 --dock-height를 읽어서 시트 바닥 여백으로 사용
+  useEffect(() => {
+    const read = () => {
+      const val = getComputedStyle(document.documentElement).getPropertyValue('--dock-height').trim()
+      const num = parseFloat(val)
+      setBottomOffset(Number.isFinite(num) ? num : 0)
+    }
+    read()
+    const observer = new MutationObserver(read)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] })
+    window.addEventListener('resize', read)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', read)
+    }
+  }, [])
+
+  // peek 섹션의 실제 렌더링 높이를 측정 → peek 상태에서 body가 새어나오지 않도록 정확히 잘라냄
+  useEffect(() => {
+    const el = peekSectionRef.current
+    if (!el) return
+    const update = () => {
+      const h = el.getBoundingClientRect().height
+      if (h > 0) setMeasuredPeekHeight(h)
+    }
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  // 백드롭 투명도: peek→half 구간에서 0 → 0.3, half→full 구간에서 0.3 → 0.5
+  const backdropOpacity = useTransform(y, () => {
+    if (vh === 0) return 0
+    const peekY = getSnapY('peek')
+    const halfY = getSnapY('half')
+    const current = y.get()
+    if (current >= peekY) return 0
+    if (current >= halfY) {
+      const ratio = (peekY - current) / Math.max(peekY - halfY, 1)
+      return ratio * 0.3
+    }
+    const ratio = (halfY - current) / Math.max(halfY, 1)
+    return 0.3 + ratio * 0.2
+  })
+
+  const snapTargets = useMemo<SheetSnap[]>(() => ['peek', 'half', 'full'], [])
+
+  const handleDragEnd = useCallback(
+    (_e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      const currentY = y.get()
+      const velocity = info.velocity.y
+      const currentIdx = snapTargets.indexOf(snap)
+
+      // 강한 플릭 → 한 단계 이동
+      if (Math.abs(velocity) > VELOCITY_THRESHOLD) {
+        if (velocity > 0) {
+          // 아래로 플릭
+          if (currentIdx === 0) {
+            onClose?.()
+          } else {
+            onSnapChange(snapTargets[currentIdx - 1])
+          }
+        } else if (currentIdx < snapTargets.length - 1) {
+          onSnapChange(snapTargets[currentIdx + 1])
+        } else {
+          onSnapChange(snap)
+        }
+        return
+      }
+
+      // 거리 기반: 가장 가까운 snap으로
+      let closest: SheetSnap = snap
+      let minDist = Infinity
+      for (const target of snapTargets) {
+        const dist = Math.abs(currentY - getSnapY(target))
+        if (dist < minDist) {
+          minDist = dist
+          closest = target
+        }
+      }
+
+      // peek 아래로 더 내려갔고 onClose가 있으면 close
+      if (currentY > getSnapY('peek') + measuredPeekHeight * 0.5 && onClose) {
+        onClose()
+        return
+      }
+
+      onSnapChange(closest)
+    },
+    [getSnapY, measuredPeekHeight, onClose, onSnapChange, snap, snapTargets, y]
+  )
+
+  const targetY = isOpen ? getSnapY(snap) : vh || 9999
+
+  return (
+    <>
+      {/* Backdrop — 앱 프레임(480px) 내부에서만 dim. dock 영역은 dim 제외 */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            key="backdrop"
+            className="pointer-events-none fixed inset-x-0 top-0 z-[var(--z-backdrop)] mx-auto w-full max-w-[480px]"
+            style={{ bottom: bottomOffset }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-black"
+              style={{
+                opacity: backdropOpacity,
+                pointerEvents: snap === 'peek' ? 'none' : 'auto'
+              }}
+              onClick={() => {
+                if (snap === 'full') onSnapChange('half')
+                else if (snap === 'half') onSnapChange('peek')
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/*
+       * 클리핑 컨테이너
+       * - dock 영역(bottom: bottomOffset)은 항상 비움 → dock 클릭 가능
+       * - overflow-hidden으로 시트가 dock 영역 밖을 렌더링/히트테스트 하지 못하게 차단
+       * - pointer-events-none 이라 빈 영역(위쪽 맵 부분)은 클릭이 맵으로 통과
+       */}
+      <div
+        className="pointer-events-none fixed inset-x-0 top-0 z-[var(--z-sheet)] mx-auto w-full max-w-[480px] overflow-hidden"
+        style={{ bottom: bottomOffset }}
+      >
+        <motion.div
+          ref={sheetRef}
+          className="bg-bg-white pointer-events-auto absolute inset-x-0 top-0 flex h-[100dvh] flex-col rounded-t-[20px] shadow-[0_-8px_24px_rgba(0,0,0,0.12)]"
+          style={{ y }}
+          animate={{ y: targetY }}
+          transition={SPRING}
+          drag="y"
+          dragConstraints={{ top: 0, bottom: sheetHeight }}
+          dragElastic={{ top: 0.05, bottom: 0.2 }}
+          onDragEnd={handleDragEnd}
+        >
+          {/* Navigation bar (full 전용) */}
+          <AnimatePresence initial={false}>
+            {snap === 'full' && navigationBar && (
+              <motion.div
+                key="nav"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="shrink-0"
+              >
+                {navigationBar}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Peek section — 실제 렌더링 높이를 측정해서 peek 상태에서 정확히 잘라냄 */}
+          <div ref={peekSectionRef} className="shrink-0 touch-none">
+            {/* Handle */}
+            <div className="flex justify-center pt-2 pb-2">
+              <span className="block h-1 w-9 rounded-full bg-gray-300" />
+            </div>
+            {peek}
+          </div>
+
+          {/* Body — full 상태에서만 스크롤 활성화 */}
+          <div
+            ref={bodyRef}
+            className="min-h-0 flex-1"
+            style={{
+              overflowY: snap === 'full' ? 'auto' : 'hidden',
+              touchAction: snap === 'full' ? 'pan-y' : 'none'
+            }}
+          >
+            {children}
+          </div>
+        </motion.div>
+      </div>
+    </>
+  )
+}
