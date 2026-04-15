@@ -7,7 +7,7 @@ import { IcoHome, IcoMyPage, IcoNearby, IcoReviews, IcoTickets } from '@/shared/
 const NAV_ITEMS = [
   { label: '홈', href: '/', icon: IcoHome },
   { label: '후기', href: '/reviews', icon: IcoReviews },
-  { label: '내 주변', href: '/nearby', icon: IcoNearby },
+  { label: '내 주변', href: '/map', icon: IcoNearby },
   { label: '내 주차권', href: '/tickets', icon: IcoTickets },
   { label: 'MY', href: '/my', icon: IcoMyPage }
 ] as const

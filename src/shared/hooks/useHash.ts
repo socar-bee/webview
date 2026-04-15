@@ -49,15 +49,20 @@ function mergePartial(current: HashRecord, partial: HashPartial): HashRecord {
 }
 
 export function useHash() {
-  const [hash, setHashState] = useState<HashRecord>(() =>
-    typeof window === 'undefined' ? {} : parseHash(window.location.hash)
-  )
+  // 서버와 클라이언트 초기 렌더가 동일하도록 항상 {}로 시작.
+  // mount 후 실제 hash로 동기화 → hydration mismatch 방지.
+  const [hash, setHashState] = useState<HashRecord>({})
+
+  // mount 시 현재 hash로 초기 동기화
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHashState(parseHash(window.location.hash))
+  }, [])
 
   // 직접 링크 진입 보정: 현재 history state에 base 플래그가 없으면,
   // 현재 엔트리를 base(hash 제거) + hash 재push 로 교체.
   // → 시트 close 시 `/nearby` 로 되돌아오고, 한 번 더 뒤로가야 앱을 떠남.
   useEffect(() => {
-    if (typeof window === 'undefined') return
     if (!window.location.hash) return
     const state = window.history.state as { __hashBase?: true } | null
     if (state?.__hashBase) return

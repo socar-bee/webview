@@ -78,7 +78,10 @@ export default function TimeFilterSheet({
       </div>
 
       {/* Sheet */}
-      <div className="bg-bg-white fixed bottom-0 left-1/2 z-[var(--z-sheet)] flex w-full max-w-[480px] -translate-x-1/2 flex-col rounded-t-[24px]">
+      <div
+        className="bg-bg-white fixed left-1/2 z-[var(--z-sheet)] flex w-full max-w-[480px] -translate-x-1/2 flex-col rounded-t-[24px]"
+        style={{ bottom: 'var(--dock-height, 0px)' }}
+      >
         {/* Header (62px) */}
         <div className="flex h-[62px] items-center justify-center px-4">
           <h2 className="text-text-strong font-bold" style={{ fontSize: 'var(--font-size-h4)' }}>

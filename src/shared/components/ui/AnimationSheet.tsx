@@ -24,6 +24,8 @@ interface AnimationSheetProps {
   navigationBar?: React.ReactNode
   /** 본문 (스크롤 가능). full 상태에서만 스크롤 활성화 */
   children: React.ReactNode
+  /** 스크롤 영역 위에 고정 오버레이 (예: 지도보기 플로팅 버튼). full 상태에서만 노출 */
+  overlay?: React.ReactNode
 }
 
 // iOS 계열 바텀시트 느낌: critical damping(ratio=1.0)로 튕김 없이 타이트하게 정착
@@ -46,23 +48,17 @@ export default function AnimationSheet({
   halfRatio = 0.45,
   peek,
   navigationBar,
-  children
+  children,
+  overlay
 }: AnimationSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
   const peekSectionRef = useRef<HTMLDivElement>(null)
-  // 초기치를 뷰포트 바로 아래로 두면 open 시 peek까지의 이동거리가 짧아져서
-  // spring 오버슈트/튕김이 거의 보이지 않는다. (9999처럼 너무 멀면 거리가 길어 튀어보임)
-  const y = useMotionValue(typeof window === 'undefined' ? 9999 : window.innerHeight)
-  // SSR 안전: 클라이언트에서는 mount 첫 렌더부터 실제 뷰포트 높이를 갖도록
-  // (0으로 시작하면 getSnapY가 0을 반환해 첫 프레임에 시트가 top으로 튐)
-  const [vh, setVh] = useState(() => (typeof window === 'undefined' ? 0 : window.innerHeight))
-  const [bottomOffset, setBottomOffset] = useState(() => {
-    if (typeof window === 'undefined') return 0
-    const val = getComputedStyle(document.documentElement).getPropertyValue('--dock-height').trim()
-    const num = parseFloat(val)
-    return Number.isFinite(num) ? num : 0
-  })
+  // SSR/CSR 동일한 초기값으로 시작해 hydration mismatch 방지.
+  // mount 후 useEffect에서 실제 뷰포트 높이로 업데이트되면 framer-motion이 애니메이션.
+  const y = useMotionValue(9999)
+  const [vh, setVh] = useState(0)
+  const [bottomOffset, setBottomOffset] = useState(0)
   // 실제 peek 섹션(handle + peek bar)의 렌더링 높이. peekHeight prop은 fallback으로만 사용.
   const [measuredPeekHeight, setMeasuredPeekHeight] = useState(peekHeight)
 
@@ -180,7 +176,8 @@ export default function AnimationSheet({
     [getSnapY, measuredPeekHeight, onClose, onSnapChange, snap, snapTargets, y]
   )
 
-  const targetY = isOpen ? getSnapY(snap) : vh || 9999
+  // vh=0이면 뷰포트 크기를 아직 모르는 것 → 화면 밖(9999)에 고정. mount 후 vh가 설정되면 올바른 위치로 애니메이션.
+  const targetY = vh === 0 ? 9999 : isOpen ? getSnapY(snap) : vh
 
   return (
     <>
@@ -249,10 +246,12 @@ export default function AnimationSheet({
 
           {/* Peek section — 실제 렌더링 높이를 측정해서 peek 상태에서 정확히 잘라냄 */}
           <div ref={peekSectionRef} className="shrink-0 touch-none">
-            {/* Handle */}
-            <div className="flex justify-center pt-2 pb-2">
-              <span className="block h-1 w-9 rounded-full bg-gray-300" />
-            </div>
+            {/* Handle — peek/half 상태에서만 노출, full 상태에서는 navigationBar가 대체 */}
+            {snap !== 'full' && (
+              <div className="flex justify-center pt-2 pb-1">
+                <span className="block h-1 w-9 rounded-full bg-gray-300" />
+              </div>
+            )}
             {peek}
           </div>
 
@@ -267,6 +266,11 @@ export default function AnimationSheet({
           >
             {children}
           </div>
+
+          {/* Overlay — 스크롤 영역 위에 고정. full 상태에서만 노출 */}
+          {snap === 'full' && overlay && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">{overlay}</div>
+          )}
         </motion.div>
       </div>
     </>
