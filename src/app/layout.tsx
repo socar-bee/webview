@@ -3,6 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css'
 import './globals.css'
 
+import QueryProvider from '@/shared/providers/QueryProvider'
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -24,9 +26,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko">
       <body className="font-sans">
-        <div className="mx-auto h-dvh w-full max-w-[480px] overflow-hidden shadow-[0_0_12px_rgba(0,0,0,0.04)]">
-          {children}
-        </div>
+        <QueryProvider>
+          <div className="mx-auto h-dvh w-full max-w-[480px] overflow-hidden shadow-[0_0_12px_rgba(0,0,0,0.04)]">
+            {children}
+          </div>
+        </QueryProvider>
       </body>
     </html>
   )

@@ -1,0 +1,162 @@
+/* ─── Enums ─── */
+
+export enum ParkingLotType {
+  PARKINGLOT = 'P',
+  SHARE = 'S'
+}
+
+export enum CouponTypeGroup {
+  UNKNOWN = 0,
+  DAILY_RANGE = 1000,
+  DAILY_HOUR = 2000,
+  DAILY_CONSECUTIVE = 3000,
+  MONTHLY = 10000
+}
+
+export enum CouponTypeSeq {
+  DAILY = 0,
+  MONTHLY_PERIOD = 10100,
+  MONTHLY_UNIT = 10200,
+  MONTHLY_PARTIAL = 10300
+}
+
+export enum CategorySeq {
+  PUBLIC = 1,
+  PRIVATE = 2
+}
+
+/* ─── ParkingLot Detail ─── */
+
+export interface ParkingLotPhoto {
+  file_name: string
+  thumbnail: string
+  width: number
+  height: number
+}
+
+export interface ParkingLotRealtime {
+  type: number
+  text: string
+  timestamp: string
+}
+
+export interface ParkingLotBasic {
+  calcPrices: Record<string, number>
+  qty: number
+  url: string | null
+  name: string
+  payYn: 'Y' | 'N'
+  phone: string | null
+  photos: ParkingLotPhoto[]
+  address: string
+  caution: string | null
+  comment: string | null
+  extLink: string | null
+  options: string[]
+  category: number
+  realtime: ParkingLotRealtime | null
+  newAddress: string
+  extLinkText: string | null
+  latitude: number
+  longitude: number
+  moduComment: string
+  operationSeq: number
+  partnerStatus: boolean
+  isAutopay: boolean
+  shareLink: string
+}
+
+export interface ParkingLotTimeContent {
+  title: string
+  contents: { key: string; value: string }[]
+}
+
+export interface ParkingLotOpenFree {
+  isFree: boolean
+  isClosed: boolean
+  operationTime: string | null
+}
+
+export interface ParkingLotAiDescription {
+  nrSeq: number
+  response: string
+}
+
+export interface ParkingLotDetail {
+  type: ParkingLotType.PARKINGLOT
+  seq: number
+  basic: ParkingLotBasic
+  times: ParkingLotTimeContent[]
+  prices: ParkingLotTimeContent[]
+  evStation: null
+  openFree: ParkingLotOpenFree
+  modifyDate: string
+  aiDescription: ParkingLotAiDescription | null
+  isCarWash: boolean
+  isAirport: boolean
+  isFeedbackEventTarget: boolean
+  isFeedbackExist: boolean
+}
+
+/* ─── Ticket (주차장에 속한 주차권 목록/상세) ─── */
+
+export interface TicketListItem {
+  couponSeq: number
+  couponName: string
+  couponTypeSeq: CouponTypeSeq
+  couponTypeGroup: CouponTypeGroup
+  couponTypeName: string
+  price: number
+  isOpen: boolean
+  isSoldOut: boolean
+  usingTimeLabel: string
+  usingDateLabel: string
+  nextTimeLabel: string
+}
+
+export interface TicketPhoto {
+  fileName: string
+  thumbnail: string
+  width: number
+  height: number
+  pictureDesc: string | null
+}
+
+export interface TicketViewParkingLotCoupon {
+  couponSeq: number
+  couponName: string
+}
+
+export interface TicketViewParkingLot {
+  parkinglotSeq: number
+  parkinglotName: string
+  parkinglotAddress: string
+  parkinglotLatitude: number
+  parkinglotLongitude: number
+  coupons: TicketViewParkingLotCoupon[]
+}
+
+export interface TicketDetail {
+  couponSeq: number
+  couponName: string
+  couponTypeSeq: CouponTypeSeq
+  couponTypeGroup: CouponTypeGroup
+  couponTypeName: string
+  price: number
+  isOpen: boolean
+  isSoldOut: boolean
+  usingTimeLabel: string
+  usingDateLabel: string
+  nextTimeLabel: string
+  notice: string
+  notice2: string
+  enteringNotice: string
+  photos: TicketPhoto[]
+  parkinglot: TicketViewParkingLot
+}
+
+/* ─── User Input Template ─── */
+
+export interface TicketUserInputTemplate {
+  userInputTemplate: string | null
+}
