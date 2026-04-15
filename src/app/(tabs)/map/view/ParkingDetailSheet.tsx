@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { useEffect } from 'react'
 
 import AnimationSheet, { type SheetSnap } from '@/shared/components/ui/AnimationSheet'
 
@@ -21,10 +22,27 @@ interface ParkingDetailSheetProps {
   onSnapChange: (s: SheetSnap) => void
   onClose: () => void
   data: ParkingDetailData | null
+  /** detail 로드 완료 시 주차장 좌표를 부모에 전달 (지도 이동에 사용) */
+  onLocationKnown?: (lat: number, lng: number) => void
 }
 
-export default function ParkingDetailSheet({ isOpen, snap, onSnapChange, onClose, data }: ParkingDetailSheetProps) {
+export default function ParkingDetailSheet({
+  isOpen,
+  snap,
+  onSnapChange,
+  onClose,
+  data,
+  onLocationKnown
+}: ParkingDetailSheetProps) {
   const vm = useParkingDetailViewModel(data?.seq ?? null, data?.parkingType)
+
+  const lat = vm.detail?.basic.latitude
+  const lng = vm.detail?.basic.longitude
+  useEffect(() => {
+    if (lat != null && lng != null) onLocationKnown?.(lat, lng)
+    // onLocationKnown은 useCallback으로 안정화되어 있으므로 deps 안전
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lat, lng])
 
   if (!data) return null
 

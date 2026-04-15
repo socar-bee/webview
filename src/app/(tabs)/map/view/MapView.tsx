@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import TimeFilterSheet, { formatDateLabel } from '@/shared/components/map/TimeFilterSheet'
 import { type SheetSnap } from '@/shared/components/ui/AnimationSheet'
@@ -21,6 +21,10 @@ export default function MapView() {
   const [showConsent, setShowConsent] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+
+  // 핀 클릭 vs URL 직접 진입 구분: 핀 클릭 시엔 지도 이동 불필요
+  const pinClickedRef = useRef(false)
+  const needPanRef = useRef(false)
 
   // URL query params에서 주차장 정보 읽기 (sheet 상태는 #hash로 분리)
   const idParam = searchParams.get('id')
@@ -72,6 +76,8 @@ export default function MapView() {
         setToast('준비중인 서비스에요')
         return
       }
+      // 핀 직접 클릭 → 이미 지도에 보이므로 location 수신 후 지도 이동 불필요
+      pinClickedRef.current = true
       setDetailSnap('peek')
       const url = `/map?type=${data.parkingType ?? ParkingLotType.PARKINGLOT}&id=${data.seq}#sheet=1`
       // 시트가 이미 열려 있으면 replace (히스토리 중첩 방지), 닫혀 있으면 push
@@ -89,6 +95,28 @@ export default function MapView() {
   useEffect(() => {
     if (!detailOpen) clearSelectedPin()
   }, [detailOpen, clearSelectedPin])
+
+  // idParam 변경(URL 직접 진입 포함) → 핀 선택 상태 주입
+  const selectPin = vm.selectPin
+  useEffect(() => {
+    if (!idParam) return
+    selectPin(Number(idParam))
+    // 핀 클릭이 아닌 경우(URL 직접 진입, 외부 링크 등) → detail 로드 후 지도 이동
+    if (!pinClickedRef.current) needPanRef.current = true
+    pinClickedRef.current = false
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idParam])
+
+  // detail 로드 완료 시 좌표 수신 → URL 직접 진입인 경우에만 지도 이동
+  const centerOnLatLng = vm.centerOnLatLng
+  const handleLocationKnown = useCallback(
+    (lat: number, lng: number) => {
+      if (!needPanRef.current) return
+      needPanRef.current = false
+      centerOnLatLng(lat, lng)
+    },
+    [centerOnLatLng]
+  )
 
   const handleConsentAllow = () => {
     localStorage.setItem('modu_location_consent', 'granted')
@@ -207,6 +235,7 @@ export default function MapView() {
         onSnapChange={setDetailSnap}
         onClose={handleCloseDetail}
         data={selectedParking}
+        onLocationKnown={handleLocationKnown}
       />
 
       <Toast message={toast} onDismiss={() => setToast(null)} duration={1000} />

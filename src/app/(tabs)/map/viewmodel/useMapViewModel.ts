@@ -109,6 +109,20 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
 
   // ─── Render Helpers ───
 
+  /**
+   * 마커를 최상단으로 올림.
+   * setZIndex만으로는 네이버 맵 DOM 순서가 갱신되지 않는 경우가 있어
+   * setMap(null) → setMap(map) 으로 DOM에 재삽입해 확실히 최상위로 올림.
+   */
+  const bringToFront = useCallback((marker: naver.maps.Marker, zIndex: number) => {
+    marker.setZIndex(zIndex)
+    const map = marker.getMap() as naver.maps.Map | null
+    if (map) {
+      marker.setMap(null)
+      marker.setMap(map)
+    }
+  }, [])
+
   const measureHtml = useCallback((html: string) => {
     const el = document.createElement('div')
     el.style.position = 'absolute'
@@ -149,7 +163,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
         position: new naver.maps.LatLng(pin.lat, pin.lng),
         map: mapRef.current,
         icon,
-        zIndex: isOn ? 100 : pin.zIndex
+        zIndex: isOn ? 200 : pin.zIndex
       })
 
       marker.set('seq', pin.seq)
@@ -184,7 +198,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
         Object.entries(cachedMarkers.current).forEach(([k, m]) => {
           if (m.get('seq') === seq) {
             m.setIcon(onIcon)
-            m.setZIndex(200)
+            bringToFront(m, 200)
             pinFingerprints.current[k] =
               `${pin.markerType}|${pin.label}|${pin.ticketName ?? ''}|${pin.ticketPrice ?? ''}|true`
           }
@@ -196,7 +210,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
 
       return marker
     },
-    [getMarkerIcon]
+    [getMarkerIcon, bringToFront]
   )
 
   // ─── Cluster Icon ───
@@ -378,6 +392,57 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
     selectedSeqRef.current = null
   }, [getMarkerIcon])
 
+  /**
+   * URL 직접 진입 등 외부에서 핀 선택 상태를 주입할 때 사용.
+   * - selectedSeqRef를 갱신하고, 이미 캐시된 마커가 있으면 즉시 isOn 스타일로 교체.
+   * - 아직 pins가 로드되지 않았다면 drawPins 시점에 isOn=true로 그려짐.
+   */
+  const selectPin = useCallback(
+    (seq: number) => {
+      if (selectedSeqRef.current === seq) return
+
+      // 이전 마커 비활성화
+      const prevSeq = selectedSeqRef.current
+      if (prevSeq !== null) {
+        const prevPin = cachedPinsBySeq.current[prevSeq]
+        if (prevPin) {
+          const icon = getMarkerIcon(prevPin, false)
+          Object.entries(cachedMarkers.current).forEach(([k, m]) => {
+            if (m.get('seq') === prevSeq) {
+              m.setIcon(icon)
+              m.setZIndex(prevPin.zIndex)
+              pinFingerprints.current[k] =
+                `${prevPin.markerType}|${prevPin.label}|${prevPin.ticketName ?? ''}|${prevPin.ticketPrice ?? ''}|false`
+            }
+          })
+        }
+      }
+
+      selectedSeqRef.current = seq
+
+      // 이미 캐시된 마커 즉시 활성화
+      const pin = cachedPinsBySeq.current[seq]
+      if (pin) {
+        const icon = getMarkerIcon(pin, true)
+        Object.entries(cachedMarkers.current).forEach(([k, m]) => {
+          if (m.get('seq') === seq) {
+            m.setIcon(icon)
+            bringToFront(m, 200)
+            pinFingerprints.current[k] =
+              `${pin.markerType}|${pin.label}|${pin.ticketName ?? ''}|${pin.ticketPrice ?? ''}|true`
+          }
+        })
+      }
+    },
+    [getMarkerIcon, bringToFront]
+  )
+
+  /** 지도 중심을 지정 좌표로 이동 */
+  const centerOnLatLng = useCallback((lat: number, lng: number) => {
+    if (!mapRef.current) return
+    mapRef.current.setCenter(new naver.maps.LatLng(lat, lng))
+  }, [])
+
   // ─── Ticket Group Pins ───
 
   const drawTicketGroupPins = useCallback((pins: TicketGroupPin[]) => {
@@ -454,8 +519,17 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
           }
         })
       })
+
+      // 모든 마커 생성 완료 후 selected 마커를 DOM 맨 끝으로 재삽입
+      // (drawPins 내 생성 순서상 selected가 다른 핀보다 먼저 추가될 수 있어 DOM 순서가 밀릴 수 있음)
+      const selectedSeq = selectedSeqRef.current
+      if (selectedSeq !== null) {
+        Object.values(cachedMarkers.current).forEach((m) => {
+          if (m.get('seq') === selectedSeq) bringToFront(m, 200)
+        })
+      }
     },
-    [generateMarker, handleMarkerOverlay]
+    [generateMarker, handleMarkerOverlay, bringToFront]
   )
 
   // pinsGroups / ticketGroupPins 변경 시 마커 그리기
@@ -633,6 +707,8 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
     openTimeFilter: useCallback(() => setIsTimeFilterOpen(true), []),
     closeTimeFilter: useCallback(() => setIsTimeFilterOpen(false), []),
     handleTimeFilterConfirm,
-    clearSelectedPin
+    clearSelectedPin,
+    selectPin,
+    centerOnLatLng
   }
 }
