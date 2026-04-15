@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 import { useAuthStore } from '@/shared/stores/authStore'
 
-import { authModel } from './model'
+import { getProfile, login } from '../model'
 
 export function useLoginViewModel() {
   const router = useRouter()
@@ -26,7 +26,7 @@ export function useLoginViewModel() {
     setIsLoading(true)
 
     try {
-      const res = await authModel.login({
+      const res = await login({
         email,
         password,
         deviceType: 'android',
@@ -36,7 +36,7 @@ export function useLoginViewModel() {
       setTokens(res.accessToken, res.refreshToken, res.userVerificationId)
 
       try {
-        const profile = await authModel.getProfile(res.accessToken)
+        const profile = await getProfile(res.accessToken)
         setProfile(profile)
       } catch {
         /* profile fetch 실패해도 로그인은 성공 */

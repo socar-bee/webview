@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 import { IcoApple, IcoEmail, IcoFacebook, IcoKakao, IcoNaver } from '@/shared/components/icons'
 
-import { useLoginViewModel } from './viewmodel'
+import { useLoginViewModel } from '../viewmodel'
 
 export default function LoginView() {
   const vm = useLoginViewModel()
