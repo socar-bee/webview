@@ -1,0 +1,381 @@
+@import 'tailwindcss';
+
+@theme {
+  /* ═══════════════════════════════════════════════════════
+     MODO Design System — Foundation Tokens
+     Source: Figma "모두의주차장 디자인 시스템 통합"
+     ═══════════════════════════════════════════════════════ */
+
+  /* ─── Font Family ─── */
+  --font-sans: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', system-ui, sans-serif;
+
+  /* ═══════════════════════════════════════════════════════
+     1. Primitive Color Palette
+     ═══════════════════════════════════════════════════════ */
+
+  /* ─── Neutral / Gray ─── */
+  --color-neutral-950: #171717;
+  --color-neutral-900: #1c1c1c;
+  --color-neutral-800: #262626;
+  --color-neutral-700: #333333;
+  --color-neutral-600: #5c5c5c;
+  --color-neutral-500: #7b7b7b;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-300: #d1d1d1;
+  --color-neutral-200: #ebebeb;
+  --color-neutral-100: #f7f7f7;
+  --color-neutral-50: #f7f7f7;
+  --color-neutral-0: #ffffff;
+
+  /* ─── Neutral / Slate ─── */
+  --color-slate-950: #0e121b;
+  --color-slate-900: #181b25;
+  --color-slate-800: #222530;
+  --color-slate-700: #2b303b;
+  --color-slate-600: #525866;
+  --color-slate-500: #717784;
+  --color-slate-400: #99a0ae;
+  --color-slate-300: #cacfd8;
+  --color-slate-200: #eaecf0;
+  --color-slate-100: #f2f5f8;
+  --color-slate-50: #f5f7fa;
+  --color-slate-0: #ffffff;
+
+  /* ─── Brand (Primary Blue) ─── */
+  --color-brand-950: #003d66;
+  --color-brand-900: #005c99;
+  --color-brand-800: #006bb3;
+  --color-brand-700: #007acc;
+  --color-brand-600: #008ae6;
+  --color-brand-500: #0099ff;
+  --color-brand-400: #33adff;
+  --color-brand-300: #66c2ff;
+  --color-brand-200: #99d6ff;
+  --color-brand-100: #cceaff;
+  --color-brand-50: #e6f5ff;
+
+  /* ─── Mint ─── */
+  --color-mint-950: #004d4b;
+  --color-mint-900: #006664;
+  --color-mint-800: #009996;
+  --color-mint-700: #00ccc8;
+  --color-mint-600: #00e6e1;
+  --color-mint-500: #00fffa;
+  --color-mint-400: #33fff8;
+  --color-mint-300: #66fff7;
+  --color-mint-200: #99fff9;
+  --color-mint-100: #ccffff;
+  --color-mint-50: #e6ffff;
+
+  /* ─── Red ─── */
+  --color-red-950: #7a2525;
+  --color-red-900: #992e2e;
+  --color-red-800: #b33535;
+  --color-red-700: #cc3d3d;
+  --color-red-600: #e64444;
+  --color-red-500: #ff4c4c;
+  --color-red-400: #ff7575;
+  --color-red-300: #ff9d9d;
+  --color-red-200: #ffc5c5;
+  --color-red-100: #ffe2e2;
+  --color-red-50: #fff1f1;
+
+  /* ─── Yellow ─── */
+  --color-yellow-950: #7a6d33;
+  --color-yellow-900: #998940;
+  --color-yellow-800: #b3a04b;
+  --color-yellow-700: #ccb756;
+  --color-yellow-600: #e6ce60;
+  --color-yellow-500: #ffe56b;
+  --color-yellow-400: #ffe978;
+  --color-yellow-300: #ffed85;
+  --color-yellow-200: #fff3ad;
+  --color-yellow-100: #fff9d6;
+  --color-yellow-50: #fffdf2;
+
+  /* ─── Orange ─── */
+  --color-orange-950: #7a4a1a;
+  --color-orange-900: #995d21;
+  --color-orange-800: #b37027;
+  --color-orange-700: #cc832e;
+  --color-orange-600: #e69634;
+  --color-orange-500: #ffa93b;
+  --color-orange-400: #ffba62;
+  --color-orange-300: #ffcb8a;
+  --color-orange-200: #ffddb1;
+  --color-orange-100: #ffeed8;
+  --color-orange-50: #fff7ec;
+
+  /* ─── Purple ─── */
+  --color-purple-950: #7200fa;
+  --color-purple-900: #8f00d9;
+  --color-purple-800: #a700e3;
+  --color-purple-700: #bf00cc;
+  --color-purple-600: #d700e6;
+  --color-purple-500: #ef00ff;
+  --color-purple-400: #ee33ff;
+  --color-purple-300: #f166ff;
+  --color-purple-200: #f599ff;
+  --color-purple-100: #faccff;
+  --color-purple-50: #fde6ff;
+
+  /* ═══════════════════════════════════════════════════════
+     2. Semantic Color Tokens (Light Mode)
+     ═══════════════════════════════════════════════════════ */
+
+  /* ─── Primary (primary/) ─── */
+  --color-primary: #0099ff;
+  --color-primary-dark: #006bb3;
+  --color-primary-darker: #007acc;
+  --color-primary-light: #cceaff;
+  --color-primary-lighter: #e6f5ff;
+
+  /* ─── Static (static/) ─── */
+  --color-static-black: #171717;
+  --color-static-white: #ffffff;
+
+  /* ─── Background (bg/) ─── */
+  --color-bg-strong: #171717;
+  --color-bg-surface: #262626;
+  --color-bg-sub: #d1d1d1;
+  --color-bg-soft: #ebebeb;
+  --color-bg-weak: #f7f7f7;
+  --color-bg-white: #ffffff;
+
+  /* ─── Text (text/) ─── */
+  --color-text-strong: #171717;
+  --color-text-sub: #5c5c5c;
+  --color-text-soft: #a3a3a3;
+  --color-text-disabled: #d1d1d1;
+  --color-text-white: #ffffff;
+
+  /* ─── Stroke (stroke/) ─── */
+  --color-stroke-strong: #171717;
+  --color-stroke-sub: #d1d1d1;
+  --color-stroke-soft: #ebebeb;
+  --color-stroke-disabled: #ffffff;
+
+  /* ─── Icon (icon/) ─── */
+  --color-icon-strong: #171717;
+  --color-icon-sub: #5c5c5c;
+  --color-icon-soft: #a3a3a3;
+  --color-icon-disabled: #d1d1d1;
+  --color-icon-white: #ffffff;
+
+  /* ─── State / Faded (state/faded/) ─── */
+  --color-faded-dark: #262626;
+  --color-faded-base: #7b7b7b;
+  --color-faded-light: #ebebeb;
+  --color-faded-lighter: #f7f7f7;
+
+  /* ─── State / Information (state/information/) ─── */
+  --color-information-dark: #003d66;
+  --color-information-base: #0099ff;
+  --color-information-light: #99d6ff;
+  --color-information-lighter: #e6f5ff;
+
+  /* ─── State / Error (state/error/) ─── */
+  --color-error-dark: #7a2525;
+  --color-error-base: #ff4c4c;
+  --color-error-light: #ffc5c5;
+  --color-error-lighter: #fff1f1;
+
+  /* ─── State / Stable (state/stable/) ─── */
+  --color-stable-dark: #004d4b;
+  --color-stable-base: #00fffa;
+  --color-stable-light: #99fff9;
+  --color-stable-lighter: #e6ffff;
+
+  /* ─── State / Caution (state/caution/) ─── */
+  --color-caution-dark: #7a4a1a;
+  --color-caution-base: #ffa93b;
+  --color-caution-light: #ffddb1;
+  --color-caution-lighter: #fff7ec;
+
+  /* ─── State / Highlighted (state/highlighted/) ─── */
+  --color-highlighted-dark: #7200fa;
+  --color-highlighted-base: #ef00ff;
+  --color-highlighted-light: #f599ff;
+  --color-highlighted-lighter: #fde6ff;
+
+  /* ═══════════════════════════════════════════════════════
+     3. Typography
+     ═══════════════════════════════════════════════════════ */
+
+  /* ─── Heading (Bold / 700) ─── */
+  --font-size-h1: 2.25rem; /* 36px */
+  --font-size-h1--line-height: 2.625rem; /* 42px */
+  --font-size-h1--letter-spacing: -0.02em;
+
+  --font-size-h2: 1.875rem; /* 30px */
+  --font-size-h2--line-height: 2.25rem; /* 36px */
+  --font-size-h2--letter-spacing: -0.015em;
+
+  --font-size-h3: 1.5rem; /* 24px */
+  --font-size-h3--line-height: 2.125rem; /* 34px */
+  --font-size-h3--letter-spacing: -0.01em;
+
+  --font-size-h4: 1.25rem; /* 20px */
+  --font-size-h4--line-height: 1.875rem; /* 30px */
+  --font-size-h4--letter-spacing: -0.005em;
+
+  /* ─── Title (SemiBold / 600) ─── */
+  --font-size-t1: 1.5rem; /* 24px */
+  --font-size-t1--line-height: 2rem; /* 32px */
+  --font-size-t1--letter-spacing: -0.02em;
+
+  --font-size-t2: 1.25rem; /* 20px */
+  --font-size-t2--line-height: 1.625rem; /* 26px */
+  --font-size-t2--letter-spacing: -0.015em;
+
+  --font-size-t3: 1rem; /* 16px */
+  --font-size-t3--line-height: 1.375rem; /* 22px */
+  --font-size-t3--letter-spacing: -0.01em;
+
+  --font-size-t4: 0.875rem; /* 14px */
+  --font-size-t4--line-height: 1.25rem; /* 20px */
+  --font-size-t4--letter-spacing: -0.005em;
+
+  --font-size-t5: 0.75rem; /* 12px */
+  --font-size-t5--line-height: 1.125rem; /* 18px */
+  --font-size-t5--letter-spacing: 0;
+
+  /* ─── Body (Regular / 400) ─── */
+  --font-size-b1: 1.25rem; /* 20px */
+  --font-size-b1--line-height: 1.875rem; /* 30px */
+  --font-size-b1--letter-spacing: -0.015em;
+
+  --font-size-b2: 1.125rem; /* 18px */
+  --font-size-b2--line-height: 1.75rem; /* 28px */
+  --font-size-b2--letter-spacing: -0.01em;
+
+  --font-size-b3: 1rem; /* 16px */
+  --font-size-b3--line-height: 1.625rem; /* 26px */
+  --font-size-b3--letter-spacing: 0;
+
+  --font-size-b4: 0.875rem; /* 14px */
+  --font-size-b4--line-height: 1.4375rem; /* 23px */
+  --font-size-b4--letter-spacing: 0;
+
+  --font-size-b5: 0.75rem; /* 12px */
+  --font-size-b5--line-height: 1.25rem; /* 20px */
+  --font-size-b5--letter-spacing: 0.01em;
+
+  /* ─── Caption (Medium / 500) ─── */
+  --font-size-c1: 1rem; /* 16px */
+  --font-size-c1--line-height: 1.5rem; /* 24px */
+  --font-size-c1--letter-spacing: 0;
+
+  --font-size-c2: 0.875rem; /* 14px */
+  --font-size-c2--line-height: 1.375rem; /* 22px */
+  --font-size-c2--letter-spacing: 0.01em;
+
+  --font-size-c3: 0.75rem; /* 12px */
+  --font-size-c3--line-height: 1.25rem; /* 20px */
+  --font-size-c3--letter-spacing: 0.02em;
+
+  --font-size-c4: 0.625rem; /* 10px */
+  --font-size-c4--line-height: 1rem; /* 16px */
+  --font-size-c4--letter-spacing: 0.03em;
+
+  --font-size-c5: 0.5rem; /* 8px */
+  --font-size-c5--line-height: 0.875rem; /* 14px */
+  --font-size-c5--letter-spacing: 0.05em;
+
+  /* ═══════════════════════════════════════════════════════
+     4. Border Radius
+     ═══════════════════════════════════════════════════════ */
+
+  --radius-0: 0px;
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-20: 20px;
+  --radius-24: 24px;
+  --radius-28: 28px;
+  --radius-full: 999px;
+
+  /* ═══════════════════════════════════════════════════════
+     5. Shadow
+     ═══════════════════════════════════════════════════════ */
+
+  --shadow-01: 0 -2px 6px 0 rgba(0, 0, 0, 0.2);
+  --shadow-02: 0 2px 6px 0 rgba(0, 0, 0, 0.2);
+  --shadow-03: 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+
+  /* ═══════════════════════════════════════════════════════
+     6. Z-Index
+     ═══════════════════════════════════════════════════════ */
+
+  --z-marker: 1;
+  --z-map: 10;
+  --z-header: 20;
+  --z-summary: 30;
+  --z-top-banner: 99;
+  --z-layer-1: 100;
+  --z-backdrop: 150;
+  --z-modal: 170;
+  --z-toast: 199;
+  --z-layer-2: 200;
+  --z-layer-3: 300;
+
+  /* ─── Screens (Mobile Only) ─── */
+  --breakpoint-min: 320px;
+  --breakpoint-max: 430px;
+}
+
+/* ─── Base Styles ─── */
+*,
+*::before,
+*::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-bg-white);
+  color: var(--color-text-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Safe Area ─── */
+:root {
+  --safe-area-top: env(safe-area-inset-top);
+  --safe-area-bottom: env(safe-area-inset-bottom);
+  --safe-area-left: env(safe-area-inset-left);
+  --safe-area-right: env(safe-area-inset-right);
+}
+
+/* ─── Utilities ─── */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
