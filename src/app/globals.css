@@ -311,17 +311,14 @@
      6. Z-Index
      ═══════════════════════════════════════════════════════ */
 
-  --z-marker: 1;
-  --z-map: 10;
-  --z-header: 20;
-  --z-summary: 30;
-  --z-top-banner: 99;
-  --z-layer-1: 100;
-  --z-backdrop: 150;
-  --z-modal: 170;
-  --z-toast: 199;
-  --z-layer-2: 200;
-  --z-layer-3: 300;
+  /* 구조: marker(1) → map-ui(100) → dock(200) → backdrop(300) → sheet(400) → modal(500) → toast(600) */
+  --z-marker: 1; /* 맵 내부 마커/클러스터 */
+  --z-map-ui: 100; /* 맵 위 UI (검색바, FAB, 로딩 토스트 등) */
+  --z-dock: 200; /* 하단 글로벌 네비게이션 */
+  --z-backdrop: 300; /* 시트/모달 dim 백드롭 */
+  --z-sheet: 400; /* 바텀시트 본체 */
+  --z-modal: 500; /* 다이얼로그/알림 */
+  --z-toast: 600; /* 토스트 (최상단) */
 
   /* ─── Screens (Mobile Only) ─── */
   --breakpoint-min: 320px;
@@ -365,6 +362,8 @@ body {
   --safe-area-bottom: env(safe-area-inset-bottom);
   --safe-area-left: env(safe-area-inset-left);
   --safe-area-right: env(safe-area-inset-right);
+  /* DockBar mount 시 ResizeObserver가 실측값으로 덮어씀 */
+  --dock-height: 0px;
 }
 
 /* ─── Utilities ─── */
