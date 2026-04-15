@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useCallback, useRef, useState } from 'react'
 
-import { fetchSearchPlace, type SearchPlace } from './model'
+import { fetchSearchPlace, type SearchPlace } from '../model'
 
 export function useSearchViewModel() {
   const router = useRouter()
@@ -49,7 +49,7 @@ export function useSearchViewModel() {
   const goBack = () => router.back()
 
   const selectPlace = (place: SearchPlace) => {
-    router.push(`/nearby?lat=${place.latitude}&lng=${place.longitude}`)
+    router.push(`/map?lat=${place.latitude}&lng=${place.longitude}`)
   }
 
   return {

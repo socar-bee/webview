@@ -1,0 +1,1 @@
+export { useSearchViewModel } from './useSearchViewModel'

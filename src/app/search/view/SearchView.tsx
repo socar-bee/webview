@@ -1,6 +1,6 @@
 'use client'
 
-import { useSearchViewModel } from './viewmodel'
+import { useSearchViewModel } from '../viewmodel'
 
 export default function SearchView() {
   const { searchText, results, isSearching, onChangeSearchText, goBack, selectPlace } = useSearchViewModel()
