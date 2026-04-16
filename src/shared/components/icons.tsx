@@ -81,7 +81,8 @@ export function IcoHome({ active, ...props }: IconProps & { active: boolean }) {
         d="M3 10.5L12 3L21 10.5V20C21 20.5523 20.5523 21 20 21H15V15H9V21H4C3.44772 21 3 20.5523 3 20V10.5Z"
         fill={active ? '#0099FF' : 'none'}
         stroke={active ? '#0099FF' : '#222222'}
-        strokeWidth="1.5"
+        strokeWidth="1.8"
+        strokeLinecap="round"
         strokeLinejoin="round"
       />
     </svg>
@@ -92,13 +93,19 @@ export function IcoReviews({ active, ...props }: IconProps & { active: boolean }
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" {...props}>
       <path
-        d="M21 11.5C21 16.75 16.95 21 12 21C10.7 21 9.5 20.7 8.4 20.2L3 21L4.3 16.4C3.5 15 3 13.3 3 11.5C3 6.25 7.05 2 12 2C16.95 2 21 6.25 21 11.5Z"
+        d="M12 3.25C7.72 3.25 4.25 6.77 4.25 11.1C4.25 12.55 4.64 13.94 5.38 15.15L4.46 18.77L8.15 18.02C9.28 18.66 10.6 19 12 19C16.28 19 19.75 15.48 19.75 11.15C19.75 6.82 16.28 3.25 12 3.25Z"
         fill={active ? '#0099FF' : 'none'}
         stroke={active ? '#0099FF' : '#222222'}
-        strokeWidth="1.5"
+        strokeWidth="1.8"
+        strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path d="M8 9.5H16M8 13H13" stroke={active ? 'white' : '#222222'} strokeWidth="1.2" strokeLinecap="round" />
+      <path
+        d="M8.25 9.35H15.75M8.25 12.65H13.6"
+        stroke={active ? 'white' : '#222222'}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }
@@ -110,7 +117,9 @@ export function IcoNearby({ active, ...props }: IconProps & { active: boolean })
         d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z"
         fill={active ? '#0099FF' : 'none'}
         stroke={active ? '#0099FF' : '#222222'}
-        strokeWidth="1.5"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <circle
         cx="12"
@@ -118,7 +127,7 @@ export function IcoNearby({ active, ...props }: IconProps & { active: boolean })
         r="2.5"
         fill={active ? 'white' : 'none'}
         stroke={active ? 'white' : '#222222'}
-        strokeWidth="1.2"
+        strokeWidth="1.8"
       />
     </svg>
   )
@@ -128,16 +137,21 @@ export function IcoTickets({ active, ...props }: IconProps & { active: boolean }
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" {...props}>
       <rect
-        x="4"
-        y="3"
-        width="16"
-        height="18"
-        rx="2"
+        x="4.25"
+        y="3.75"
+        width="15.5"
+        height="16.5"
+        rx="2.5"
         fill={active ? '#0099FF' : 'none'}
         stroke={active ? '#0099FF' : '#222222'}
-        strokeWidth="1.5"
+        strokeWidth="1.8"
       />
-      <path d="M8 8H16M8 12H14M8 16H12" stroke={active ? 'white' : '#222222'} strokeWidth="1.2" strokeLinecap="round" />
+      <path
+        d="M8.25 8.5H15.75M8.25 12H14.1M8.25 15.5H12.25"
+        stroke={active ? 'white' : '#222222'}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }
@@ -151,13 +165,15 @@ export function IcoMyPage({ active, ...props }: IconProps & { active: boolean })
         r="4"
         fill={active ? '#0099FF' : 'none'}
         stroke={active ? '#0099FF' : '#222222'}
-        strokeWidth="1.5"
+        strokeWidth="1.8"
       />
       <path
         d="M4 20C4 16.6863 6.68629 14 10 14H14C17.3137 14 20 16.6863 20 20V21H4V20Z"
         fill={active ? '#0099FF' : 'none'}
         stroke={active ? '#0099FF' : '#222222'}
-        strokeWidth="1.5"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   )

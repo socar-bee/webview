@@ -1,5 +1,7 @@
 'use client'
 
+import { motion } from 'framer-motion'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 
 import { DETAIL_TABS, useParkingDetailViewModel } from '../viewmodel'
@@ -16,7 +18,7 @@ export default function ParkingDetailView({ seq, initialDetail }: ParkingDetailV
   const detail = vm.detail
 
   return (
-    <div className="bg-bg-weak flex min-h-screen flex-col">
+    <div className="scrollbar-hide bg-bg-weak flex min-h-screen flex-col overflow-y-auto">
       {/* 헤더 */}
       <header className="bg-bg-white flex items-center gap-2 px-2 py-3">
         <button onClick={() => router.back()} className="flex size-10 items-center justify-center">
@@ -39,7 +41,7 @@ export default function ParkingDetailView({ seq, initialDetail }: ParkingDetailV
       <div className="bg-bg-white px-6 pt-4 pb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-text-strong text-[20px] leading-[1.5] font-bold">{detail?.basic.name ?? ''}</h2>
+            <h2 className="text-text-strong text-[20px] leading-normal font-bold">{detail?.basic.name ?? ''}</h2>
             <p className="text-text-sub mt-0.5 flex items-center gap-1.5 text-[14px]">
               {detail?.basic.partnerStatus && <span>제휴</span>}
               {detail?.basic.partnerStatus && detail?.basic.qty != null && (
@@ -50,7 +52,7 @@ export default function ParkingDetailView({ seq, initialDetail }: ParkingDetailV
               {detail?.basic.qty != null && <span>{detail.basic.qty.toLocaleString()}면</span>}
             </p>
           </div>
-          <button className="bg-primary text-static-white flex size-[53px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-[8px]">
+          <button className="bg-primary text-static-white rounded-8 flex size-[53px] shrink-0 flex-col items-center justify-center gap-0.5">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path
                 d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
@@ -67,8 +69,32 @@ export default function ParkingDetailView({ seq, initialDetail }: ParkingDetailV
         <div className="bg-bg-white mt-2.5">
           <div className="scrollbar-hide flex gap-3 overflow-x-auto px-4 py-4">
             {detail.basic.photos.map((photo, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={i} src={photo.thumbnail} alt="" className="size-40 shrink-0 rounded-lg object-cover" />
+              <motion.div
+                key={i}
+                className="relative h-40 w-40 shrink-0 overflow-hidden rounded-lg"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.08, duration: 0.3 }}
+              >
+                <Image
+                  src={photo.file_name}
+                  alt=""
+                  fill
+                  sizes="160px"
+                  className="object-cover"
+                  onError={(e) => {
+                    const wrapper = (e.target as HTMLElement).closest('.relative') as HTMLElement | null
+                    if (wrapper) wrapper.style.display = 'none'
+                    const gallery = wrapper?.parentElement
+                    if (
+                      gallery &&
+                      Array.from(gallery.children).every((c) => (c as HTMLElement).style.display === 'none')
+                    ) {
+                      ;(gallery.closest('.bg-bg-white') as HTMLElement | null)!.style.display = 'none'
+                    }
+                  }}
+                />
+              </motion.div>
             ))}
           </div>
         </div>
@@ -267,11 +293,11 @@ function InfoSection({
         로드뷰 보기
       </button>
 
-      {prices.map((section) => (
-        <InfoCardSection key={section.title} icon="fare" title={section.title} contents={section.contents} />
+      {prices.map((section, i) => (
+        <InfoCardSection key={`fare-${i}`} icon="fare" title={section.title} contents={section.contents} />
       ))}
-      {times.map((section) => (
-        <InfoCardSection key={section.title} icon="clock" title={section.title} contents={section.contents} />
+      {times.map((section, i) => (
+        <InfoCardSection key={`time-${i}`} icon="clock" title={section.title} contents={section.contents} />
       ))}
 
       {basic.options.length > 0 && (

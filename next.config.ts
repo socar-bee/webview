@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'cdn-dev.modudev.cloud',
         pathname: '/**'
+      },
+      {
+        protocol: 'https',
+        hostname: 'parking-cdn.socar.me',
+        pathname: '/**'
       }
     ]
   },

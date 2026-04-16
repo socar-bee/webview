@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 
-import { IcoApple, IcoEmail, IcoFacebook, IcoKakao, IcoNaver } from '@/shared/components/icons'
+import { IcoEmail, IcoKakao, IcoNaver } from '@/shared/components/icons'
 
 import { useLoginViewModel } from '../viewmodel'
 
@@ -29,32 +29,17 @@ export default function LoginView() {
               카카오로 3초만에 시작하기
             </button>
 
+            <button className="rounded-12 text-static-white flex w-full items-center justify-center gap-2 bg-[#03C75A] py-3 text-[13px] font-bold transition-opacity hover:opacity-90 active:opacity-80">
+              <IcoNaver />
+              네이버로 시작하기
+            </button>
+
             <button
               onClick={vm.openEmailForm}
               className="rounded-12 text-static-white flex w-full items-center justify-center gap-2 bg-neutral-800 py-3 text-[13px] font-bold transition-opacity hover:opacity-90 active:opacity-80"
             >
               <IcoEmail />
               이메일로 시작하기
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div className="mt-5 flex w-full max-w-[300px] items-center gap-3">
-            <div className="bg-stroke-soft h-px flex-1" />
-            <span className="text-text-soft text-[11px]">또는</span>
-            <div className="bg-stroke-soft h-px flex-1" />
-          </div>
-
-          {/* Social Login Icons */}
-          <div className="mt-4 flex items-center gap-4">
-            <button className="flex size-11 items-center justify-center rounded-full bg-[#03C75A] transition-opacity hover:opacity-90 active:opacity-80">
-              <IcoNaver />
-            </button>
-            <button className="flex size-11 items-center justify-center rounded-full bg-[#1877F2] transition-opacity hover:opacity-90 active:opacity-80">
-              <IcoFacebook />
-            </button>
-            <button className="flex size-11 items-center justify-center rounded-full bg-[#000000] transition-opacity hover:opacity-90 active:opacity-80">
-              <IcoApple />
             </button>
           </div>
 

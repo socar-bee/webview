@@ -1,9 +1,15 @@
 'use client'
 
+import Lottie from 'lottie-react'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { IcoHome, IcoMyPage, IcoNearby, IcoReviews, IcoTickets } from '@/shared/components/icons'
+
+import reviewDockIntro from '@/shared/assets/lottie/reviewDockIntro.json'
+
+const REVIEW_INTRO_STORAGE_KEY = 'modu_dock_review_intro_seen'
+
 const NAV_ITEMS = [
   { label: '홈', href: '/', icon: IcoHome },
   { label: '후기', href: '/reviews', icon: IcoReviews },
@@ -16,6 +22,12 @@ export default function DockBar() {
   const pathname = usePathname()
   const router = useRouter()
   const navRef = useRef<HTMLElement>(null)
+  const [showReviewIntro, setShowReviewIntro] = useState(() => {
+    if (typeof window === 'undefined') return false
+    if (localStorage.getItem(REVIEW_INTRO_STORAGE_KEY) === '1') return false
+    localStorage.setItem(REVIEW_INTRO_STORAGE_KEY, '1')
+    return true
+  })
 
   // 시트/오버레이에서 참조할 수 있도록 dock 높이를 :root CSS 변수로 노출
   useEffect(() => {
@@ -38,6 +50,10 @@ export default function DockBar() {
     router.push(item.href)
   }
 
+  const handleReviewIntroComplete = () => {
+    setShowReviewIntro(false)
+  }
+
   return (
     <nav
       ref={navRef}
@@ -47,13 +63,26 @@ export default function DockBar() {
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
           const Icon = item.icon
+          const showLottie = item.href === '/reviews' && showReviewIntro
           return (
             <button
               key={item.href}
               onClick={() => handleClick(item)}
               className="flex flex-col items-center gap-0.5 px-3 py-1"
             >
-              <Icon active={isActive} />
+              {showLottie ? (
+                <span className="flex size-6 items-center justify-center" aria-hidden="true">
+                  <Lottie
+                    animationData={reviewDockIntro}
+                    loop={false}
+                    autoplay
+                    style={{ width: 24, height: 24 }}
+                    onComplete={handleReviewIntroComplete}
+                  />
+                </span>
+              ) : (
+                <Icon active={isActive} />
+              )}
               <span
                 className={`text-[10px] leading-[14px] ${isActive ? 'text-primary font-medium' : 'text-[#222222]'}`}
               >
