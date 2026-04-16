@@ -1,3 +1,5 @@
 export { useParkingDetailViewModel } from './useParkingDetailViewModel'
 export type { DetailTabKey } from './useParkingDetailViewModel'
 export { DETAIL_TABS } from './useParkingDetailViewModel'
+export { useRecommendParkingViewModel } from './useRecommendParkingViewModel'
+export type { RecommendParking } from './useRecommendParkingViewModel'
