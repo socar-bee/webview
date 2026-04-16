@@ -99,10 +99,13 @@ export default function MapView() {
 
   const handleCloseDetail = closeSheet
 
-  // sheet 닫힐 때 선택된 마커 활성 상태 초기화
+  // sheet 닫힐 때 선택된 마커 활성 상태 초기화 + snap을 peek으로 리셋
   const clearSelectedPin = vm.clearSelectedPin
   useEffect(() => {
-    if (!detailOpen) clearSelectedPin()
+    if (!detailOpen) {
+      clearSelectedPin()
+      setDetailSnap('peek')
+    }
   }, [detailOpen, clearSelectedPin])
 
   // idParam 변경(URL 직접 진입 포함) → 핀 선택 상태 주입
@@ -155,6 +158,8 @@ export default function MapView() {
   }, [])
 
   useEffect(() => {
+    // 검색 좌표로 진입한 경우 현재 위치 이동 건너뜀
+    if (searchCoords) return
     const consent = localStorage.getItem('modu_location_consent')
     if (consent === 'granted') {
       vm.moveToCurrentLocation(false)
@@ -193,7 +198,14 @@ export default function MapView() {
               {entryTimeLabel}
             </button>
           )}
-          <button className="border-stroke-soft bg-bg-white text-text-strong inline-flex min-h-[34px] shrink-0 items-center justify-center rounded-full border px-3 py-1 text-[13px] font-medium whitespace-nowrap">
+          <button
+            onClick={vm.toggleBuyableOnly}
+            className={`inline-flex min-h-[34px] shrink-0 items-center justify-center rounded-full border px-3 py-1 text-[13px] font-medium whitespace-nowrap ${
+              vm.buyableOnly
+                ? 'border-primary bg-primary text-static-white'
+                : 'border-stroke-soft bg-bg-white text-text-strong'
+            }`}
+          >
             구매 가능
           </button>
         </div>

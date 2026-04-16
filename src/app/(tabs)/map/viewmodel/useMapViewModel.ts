@@ -78,6 +78,8 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
   const pinFingerprints = useRef<Record<string, string>>({})
   const currentPositionMarkerRef = useRef<naver.maps.Marker | null>(null)
   const cachedTicketGroupMarkers = useRef<naver.maps.Marker[]>([])
+  // 지도 초기화 전 moveToCurrentLocation 호출 시 보류: { showPin }
+  const pendingLocationMoveRef = useRef<{ showPin: boolean } | null>(null)
 
   // ─── Map Bounds State (TanStack Query 트리거용) ───
   const [mapBounds, setMapBounds] = useState<Bounds | null>(null)
@@ -88,6 +90,10 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
   const [selectedDurationId, setSelectedDurationId] = useState('')
   const [isTimeFilterOpen, setIsTimeFilterOpen] = useState(false)
   const [timeFilter, setTimeFilter] = useState<TimeFilterDefaults | null>(null)
+
+  // ─── 구매가능 필터 토글 ───
+  const [buyableOnly, setBuyableOnly] = useState(false)
+  const buyableOnlyRef = useRef(false)
 
   // ─── TanStack Query ───
   const { data: timeFilterOptions } = useTimeFilterOptions()
@@ -353,6 +359,12 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
       return
     }
 
+    // 구매가능 필터: ON이면 hasActivePrimaryTicket=false인 마커 숨김
+    if (buyableOnlyRef.current && !marker.get('hasActivePrimaryTicket')) {
+      marker.setMap(null)
+      return
+    }
+
     marker.setMap(mapRef.current)
   }, [])
 
@@ -556,6 +568,18 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options.searchCoords?.lat, options.searchCoords?.lng])
 
+  // ─── 구매가능 필터 토글 → 기존 마커에 즉시 반영 ───
+
+  const toggleBuyableOnly = useCallback(() => {
+    setBuyableOnly((prev) => {
+      const next = !prev
+      buyableOnlyRef.current = next
+      // 모든 마커에 대해 overlay 재계산 (필터 적용/해제)
+      Object.values(cachedMarkers.current).forEach(handleMarkerOverlay)
+      return next
+    })
+  }, [handleMarkerOverlay])
+
   // ─── Time Filter Handlers ───
 
   const handleTimeFilterConfirm = useCallback(() => {
@@ -653,12 +677,51 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
     naver.maps.Event.addListener(map, 'click', () => {
       onMapClickRef.current?.()
     })
+
+    // 지도 초기화 전 보류된 현재 위치 이동 요청 처리
+    if (pendingLocationMoveRef.current) {
+      const { showPin } = pendingLocationMoveRef.current
+      pendingLocationMoveRef.current = null
+      // moveToCurrentLocation은 mapRef.current가 있으므로 정상 실행
+      navigator.geolocation?.getCurrentPosition(
+        (pos) => {
+          if (!mapRef.current) return
+          const position = new naver.maps.LatLng(pos.coords.latitude, pos.coords.longitude)
+          mapRef.current.setCenter(position)
+          if (!showPin) return
+          if (currentPositionMarkerRef.current) {
+            currentPositionMarkerRef.current.setMap(null)
+            currentPositionMarkerRef.current = null
+          }
+          const html = ReactDOMServer.renderToString(CurrentPositionMarker())
+          const { width: w, height: h } = measureHtml(html)
+          currentPositionMarkerRef.current = new naver.maps.Marker({
+            position,
+            map: mapRef.current,
+            icon: {
+              content: html,
+              size: new naver.maps.Size(w, h),
+              anchor: new naver.maps.Point(w / 2, h)
+            },
+            zIndex: 99
+          })
+        },
+        () => {}
+      )
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const moveToCurrentLocation = useCallback(
     (showPin = true) => {
       if (!navigator.geolocation) return
+
+      // 지도가 아직 초기화되지 않은 경우 → 보류 후 initMap 완료 시 재시도
+      if (!mapRef.current) {
+        pendingLocationMoveRef.current = { showPin }
+        return
+      }
+
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           if (!mapRef.current) return
@@ -707,6 +770,8 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
     openTimeFilter: useCallback(() => setIsTimeFilterOpen(true), []),
     closeTimeFilter: useCallback(() => setIsTimeFilterOpen(false), []),
     handleTimeFilterConfirm,
+    buyableOnly,
+    toggleBuyableOnly,
     clearSelectedPin,
     selectPin,
     centerOnLatLng
