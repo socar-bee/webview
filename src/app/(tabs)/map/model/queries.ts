@@ -46,7 +46,12 @@ export function usePins(params: UsePinsParams | null) {
 
       return { pinsGroups, ticketGroupPins }
     },
+    // /map 진입 시 항상 재호출 (캐시된 bounds/geohashes/timeFilter 조합이 있어도 무조건 refetch)
+    refetchOnMount: 'always',
     staleTime: 60_000,
+    // structuralSharing=false → refetch 결과가 동일 구조여도 새 참조 반환
+    //   → drawPins useEffect([pinsGroups, ...])가 확실히 재실행되어 마커 재렌더링 보장
+    structuralSharing: false,
     enabled: !!params
   })
 }

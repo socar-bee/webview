@@ -1,6 +1,6 @@
 'use client'
 
-import { AnimatePresence, motion, type PanInfo, useMotionValue, useTransform } from 'framer-motion'
+import { AnimatePresence, motion, type PanInfo, useDragControls, useMotionValue, useTransform } from 'framer-motion'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 export type SheetSnap = 'peek' | 'half' | 'full'
@@ -31,7 +31,9 @@ interface AnimationSheetProps {
 // iOS 계열 바텀시트 느낌: critical damping(ratio=1.0)로 튕김 없이 타이트하게 정착
 // ζ = damping / (2 * sqrt(stiffness * mass)) = 40 / (2 * sqrt(400)) = 1.0
 const SPRING = { type: 'spring' as const, damping: 40, stiffness: 400, mass: 1 }
-const VELOCITY_THRESHOLD = 500
+const VELOCITY_THRESHOLD = 300
+// 드래그 offset이 이 값만 넘어도 방향성 있는 의도로 판단 → 인접 snap으로 즉시 commit
+const COMMIT_OFFSET = 20
 
 /**
  * framer-motion 기반 3-snap 바텀시트.
@@ -54,6 +56,9 @@ export default function AnimationSheet({
   const sheetRef = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
   const peekSectionRef = useRef<HTMLDivElement>(null)
+  // dragListener=false + 수동 start → 드래그 진입점을 상단(peek/navBar) 영역에만 부여.
+  // body(스크롤 영역)에서 시작된 포인터는 시트 드래그로 오인되지 않음.
+  const dragControls = useDragControls()
   // SSR/CSR 동일한 초기값으로 시작해 hydration mismatch 방지.
   // mount 후 useEffect에서 실제 뷰포트 높이로 업데이트되면 framer-motion이 애니메이션.
   const y = useMotionValue(9999)
@@ -135,12 +140,23 @@ export default function AnimationSheet({
     (_e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       const currentY = y.get()
       const velocity = info.velocity.y
+      const offset = info.offset.y
       const currentIdx = snapTargets.indexOf(snap)
 
-      // 강한 플릭 → 한 단계 이동
-      if (Math.abs(velocity) > VELOCITY_THRESHOLD) {
-        if (velocity > 0) {
-          // 아래로 플릭
+      // peek에서 아래로 충분히 끌어내렸으면 close
+      if (snap === 'peek' && offset > measuredPeekHeight * 0.5 && onClose) {
+        onClose()
+        return
+      }
+
+      // 방향성 있는 의도 감지: 작은 offset 또는 살짝의 velocity만 있어도 인접 snap으로 commit
+      // ("드드드드드" 느낌 제거 — 원점 복귀 대신 딱딱 다음 snap으로 떨어지게)
+      const hasDirectionalIntent = Math.abs(offset) > COMMIT_OFFSET || Math.abs(velocity) > VELOCITY_THRESHOLD
+
+      if (hasDirectionalIntent) {
+        // 방향 결정: offset 우선, tie일 땐 velocity
+        const goingDown = Math.abs(offset) > COMMIT_OFFSET ? offset > 0 : velocity > 0
+        if (goingDown) {
           if (currentIdx === 0) {
             onClose?.()
           } else {
@@ -154,7 +170,7 @@ export default function AnimationSheet({
         return
       }
 
-      // 거리 기반: 가장 가까운 snap으로
+      // 의도가 모호한 미세한 떨림 → 거리 기반으로 가장 가까운 snap으로 복귀
       let closest: SheetSnap = snap
       let minDist = Infinity
       for (const target of snapTargets) {
@@ -164,13 +180,6 @@ export default function AnimationSheet({
           closest = target
         }
       }
-
-      // peek 아래로 더 내려갔고 onClose가 있으면 close
-      if (currentY > getSnapY('peek') + measuredPeekHeight * 0.5 && onClose) {
-        onClose()
-        return
-      }
-
       onSnapChange(closest)
     },
     [getSnapY, measuredPeekHeight, onClose, onSnapChange, snap, snapTargets, y]
@@ -219,16 +228,19 @@ export default function AnimationSheet({
       >
         <motion.div
           ref={sheetRef}
-          className="bg-bg-white pointer-events-auto absolute inset-x-0 top-0 flex h-[100dvh] flex-col rounded-t-[20px] shadow-[0_-8px_24px_rgba(0,0,0,0.12)]"
-          style={{ y }}
+          className="bg-bg-white pointer-events-auto absolute inset-x-0 top-0 flex flex-col rounded-t-[20px] shadow-[0_-8px_24px_rgba(0,0,0,0.12)]"
+          // height=sheetHeight → dock 높이 제외. 본문 flex 레이아웃이 dock 위 영역 안에 맞게 분배됨.
+          style={{ y, height: sheetHeight || '100dvh' }}
           animate={{ y: targetY }}
           transition={SPRING}
           drag="y"
+          dragListener={false}
+          dragControls={dragControls}
           dragConstraints={{ top: 0, bottom: sheetHeight }}
           dragElastic={{ top: 0.05, bottom: 0.2 }}
           onDragEnd={handleDragEnd}
         >
-          {/* Navigation bar (full 전용) */}
+          {/* Navigation bar (full 전용) — drag 진입점 */}
           <AnimatePresence initial={false}>
             {snap === 'full' && navigationBar && (
               <motion.div
@@ -237,15 +249,16 @@ export default function AnimationSheet({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
-                className="shrink-0"
+                className="shrink-0 touch-none"
+                onPointerDown={(e) => dragControls.start(e)}
               >
                 {navigationBar}
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Peek section — 실제 렌더링 높이를 측정해서 peek 상태에서 정확히 잘라냄 */}
-          <div ref={peekSectionRef} className="shrink-0 touch-none">
+          {/* Peek section — drag 진입점. 실제 렌더링 높이를 측정해서 peek 상태에서 정확히 잘라냄 */}
+          <div ref={peekSectionRef} className="shrink-0 touch-none" onPointerDown={(e) => dragControls.start(e)}>
             {/* Handle — peek/half 상태에서만 노출, full 상태에서는 navigationBar가 대체 */}
             {snap !== 'full' && (
               <div className="flex justify-center pt-2 pb-1">
@@ -255,13 +268,18 @@ export default function AnimationSheet({
             {peek}
           </div>
 
-          {/* Body — full 상태에서만 스크롤 활성화 */}
+          {/* Body — full 상태에서만 스크롤 활성화.
+           *   - full:  overflow-y: auto + touch-action: pan-y → 본문 스크롤. 드래그 트리거 없음 → 탭 콘텐츠 스크롤이 시트 이동으로 오인되지 않음.
+           *   - peek/half: overflow-y: hidden + touch-action: none → 스크롤 없음. 본문에서 시작된 포인터도 드래그로 연결. */}
           <div
             ref={bodyRef}
             className="min-h-0 flex-1"
             style={{
               overflowY: snap === 'full' ? 'auto' : 'hidden',
               touchAction: snap === 'full' ? 'pan-y' : 'none'
+            }}
+            onPointerDown={(e) => {
+              if (snap !== 'full') dragControls.start(e)
             }}
           >
             {children}

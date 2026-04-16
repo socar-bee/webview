@@ -4,23 +4,24 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect } from 'react'
 
 interface ToastProps {
+  id?: number
   message: string | null
   onDismiss: () => void
   duration?: number
 }
 
-export default function Toast({ message, onDismiss, duration = 2500 }: ToastProps) {
+export default function Toast({ id, message, onDismiss, duration = 2500 }: ToastProps) {
   useEffect(() => {
     if (!message) return
     const t = setTimeout(onDismiss, duration)
     return () => clearTimeout(t)
-  }, [message, duration, onDismiss])
+  }, [id, message, duration, onDismiss])
 
   return (
     <AnimatePresence>
       {message && (
         <motion.div
-          key={message}
+          key={id ?? message}
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}

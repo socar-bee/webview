@@ -5,7 +5,7 @@ import { IcoChevronRight } from '@/shared/components/icons'
 
 export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
       <body>
         <section className="flex h-dvh flex-col items-center justify-center px-6 text-center">
           <h1 className="mb-3 text-[20px] font-bold text-[#171717] md:text-[24px]">일시적인 오류가 발생했습니다</h1>

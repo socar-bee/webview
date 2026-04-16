@@ -61,6 +61,8 @@ export default function ParkingDetailSheet({
       halfRatio={0.45}
       navigationBar={<NavigationBar title={displayName} onBack={onClose} />}
       peek={
+        // full 상태에서는 body 안 상단에 PeekBar를 배치해 스크롤과 함께 사라지게 함 (Tab bar가 NavBar 바로 아래로 sticky).
+        // peek/half 에서는 드래그 핸들 영역에 고정 노출.
         snap !== 'full' ? (
           <PeekBar
             name={displayName}
@@ -72,7 +74,7 @@ export default function ParkingDetailSheet({
       }
       overlay={
         <button
-          onClick={() => onSnapChange('peek')}
+          onClick={onClose}
           className="bg-primary text-static-white shadow-02 pointer-events-auto flex h-11 items-center gap-1.5 rounded-full px-5 text-[14px] font-semibold"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -83,7 +85,7 @@ export default function ParkingDetailSheet({
       }
     >
       <div className="flex flex-col">
-        {/* full 상태에서 PeekBar는 스크롤 영역 상단에 배치 → 스크롤 시 사라짐 */}
+        {/* full 상태에서만 body 안 최상단에 PeekBar 배치 → 스크롤하면 사라지고 Tab bar가 NavBar 아래로 sticky */}
         {snap === 'full' && (
           <PeekBar
             name={displayName}

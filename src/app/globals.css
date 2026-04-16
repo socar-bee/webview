@@ -336,11 +336,15 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* PTR/바운스 완전 차단 */
+  overscroll-behavior-y: none;
 }
 
 body {
   background-color: var(--color-bg-white);
   color: var(--color-text-strong);
+  /* 내부 스크롤 체인 차단 */
+  overscroll-behavior-y: contain;
 }
 
 @media (prefers-reduced-motion: reduce) {

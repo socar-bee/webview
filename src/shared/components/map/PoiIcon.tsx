@@ -29,17 +29,17 @@ function ParkingCircle({ isOn }: { isOn: boolean }) {
   )
 }
 
-// ── PRIVATE/PUBLIC - 흰 배경 + primary border + 중앙 'P' ──
+// ── PRIVATE/PUBLIC - light primary 배경 + primary border + 중앙 'P' ──
 function NormalPublicPOI({ label, isOn }: { label: string; isOn: boolean }) {
   return (
     <PoiWrapper>
       <div className="flex flex-col items-center">
         <div
           className={`flex h-[28px] w-[28px] items-center justify-center rounded-full border-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.25)] ${
-            isOn ? 'border-[#163D56] bg-[#224D6A]' : 'border-primary bg-white'
+            isOn ? 'border-[#163D56] bg-[#224D6A]' : 'border-primary bg-primary-light'
           }`}
         >
-          <span className={`text-[13px] leading-none font-bold ${isOn ? 'text-white' : 'text-primary'}`}>P</span>
+          <span className={`text-[13px] leading-none font-bold ${isOn ? 'text-white' : 'text-primary-dark'}`}>P</span>
         </div>
         {label && (
           <div

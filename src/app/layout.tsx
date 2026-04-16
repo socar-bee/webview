@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
       <body className="font-sans">
         <QueryProvider>
           <div className="mx-auto h-dvh w-full max-w-[480px] overflow-hidden shadow-[0_0_12px_rgba(0,0,0,0.04)]">

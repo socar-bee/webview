@@ -14,13 +14,18 @@ import { ParkingLotType } from '@/shared/types/parking'
 import LocationConsentSheet from './LocationConsentSheet'
 import ParkingDetailSheet, { type ParkingDetailData } from './ParkingDetailSheet'
 
+interface ToastState {
+  id: number
+  message: string
+}
+
 export default function MapView() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [detailSnap, setDetailSnap] = useState<SheetSnap>('peek')
   const [showConsent, setShowConsent] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, setToast] = useState<ToastState | null>(null)
 
   // 핀 클릭 vs URL 직접 진입 구분: 핀 클릭 시엔 지도 이동 불필요
   const pinClickedRef = useRef(false)
@@ -59,6 +64,10 @@ export default function MapView() {
     setDetailOpen(false)
   }
 
+  const showToast = useCallback((message: string) => {
+    setToast({ id: Date.now(), message })
+  }, [])
+
   const vm = useMapViewModel({
     onMapClick: () => {
       if (!detailOpen) return
@@ -73,7 +82,7 @@ export default function MapView() {
     searchCoords,
     onPinClick: (data: ParkingDetailData) => {
       if (data.parkingType === ParkingLotType.SHARE) {
-        setToast('준비중인 서비스에요')
+        showToast('준비중인 서비스에요')
         return
       }
       // 핀 직접 클릭 → 이미 지도에 보이므로 location 수신 후 지도 이동 불필요
@@ -238,7 +247,7 @@ export default function MapView() {
         onLocationKnown={handleLocationKnown}
       />
 
-      <Toast message={toast} onDismiss={() => setToast(null)} duration={1000} />
+      <Toast id={toast?.id} message={toast?.message ?? null} onDismiss={() => setToast(null)} duration={1000} />
 
       {showConsent && <LocationConsentSheet onAllow={handleConsentAllow} onDeny={handleConsentDeny} />}
     </div>
