@@ -24,12 +24,18 @@ export default function LoginView() {
         <>
           {/* Social Login Buttons */}
           <div className="mt-6 flex w-full max-w-[300px] flex-col gap-2.5">
-            <button className="rounded-12 flex w-full items-center justify-center gap-2 bg-[#FEE500] py-3 text-[13px] font-bold text-[#191919] transition-opacity hover:opacity-90 active:opacity-80">
+            <button
+              onClick={vm.handleKakaoLogin}
+              className="rounded-12 flex w-full items-center justify-center gap-2 bg-[#FEE500] py-3 text-[13px] font-bold text-[#191919] transition-opacity hover:opacity-90 active:opacity-80"
+            >
               <IcoKakao />
               카카오로 3초만에 시작하기
             </button>
 
-            <button className="rounded-12 text-static-white flex w-full items-center justify-center gap-2 bg-[#03C75A] py-3 text-[13px] font-bold transition-opacity hover:opacity-90 active:opacity-80">
+            <button
+              onClick={vm.handleNaverLogin}
+              className="rounded-12 text-static-white flex w-full items-center justify-center gap-2 bg-[#03C75A] py-3 text-[13px] font-bold transition-opacity hover:opacity-90 active:opacity-80"
+            >
               <IcoNaver />
               네이버로 시작하기
             </button>
@@ -42,6 +48,8 @@ export default function LoginView() {
               이메일로 시작하기
             </button>
           </div>
+
+          {vm.error && <p className="text-error-base mt-2 text-[12px]">{vm.error}</p>}
 
           {/* Guest */}
           <Link

@@ -1,7 +1,17 @@
 export interface LoginRequest {
   email: string
-  password: string
-  deviceType: 'android' | 'iphone'
+  pw: string
+  deviceType: 'android' | 'iphone' | 'web'
+  deviceToken: string
+  version: string
+}
+
+export type SocialLoginProvider = 'kakao' | 'naver'
+
+export interface SocialLoginRequest {
+  provider: SocialLoginProvider
+  accessToken: string
+  deviceType: 'android' | 'iphone' | 'web'
   deviceToken: string
   version: string
 }

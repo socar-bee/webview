@@ -1,9 +1,14 @@
 import apiClient from '@/shared/lib/apiClient'
 
-import type { LoginRequest, LoginResponse, UserProfile } from '@/shared/types/auth'
+import type { LoginRequest, LoginResponse, SocialLoginRequest, UserProfile } from '@/shared/types/auth'
 
 export async function login(body: LoginRequest): Promise<LoginResponse> {
-  const { data } = await apiClient.post<{ data: LoginResponse }>('/user/login', body)
+  const { data } = await apiClient.post<{ data: LoginResponse }>('/login', body)
+  return data.data
+}
+
+export async function socialLogin(body: SocialLoginRequest): Promise<LoginResponse> {
+  const { data } = await apiClient.post<{ data: LoginResponse }>('/login/social', body)
   return data.data
 }
 

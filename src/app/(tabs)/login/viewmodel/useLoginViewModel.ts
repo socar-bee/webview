@@ -3,6 +3,9 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+import { loadKakaoSDK, loginWithKakao } from '@/shared/lib/oauth'
+import { loginWithNaver } from '@/shared/lib/oauth'
+
 import { useAuthStore } from '@/shared/stores/authStore'
 
 import { getProfile, login } from '../model'
@@ -28,8 +31,8 @@ export function useLoginViewModel() {
     try {
       const res = await login({
         email,
-        password,
-        deviceType: 'android',
+        pw: password,
+        deviceType: 'web',
         deviceToken: 'web',
         version: '2.0.0'
       })
@@ -50,6 +53,23 @@ export function useLoginViewModel() {
     }
   }
 
+  const handleKakaoLogin = async () => {
+    try {
+      await loadKakaoSDK()
+      loginWithKakao()
+    } catch {
+      setError('카카오 로그인을 시작할 수 없습니다')
+    }
+  }
+
+  const handleNaverLogin = () => {
+    try {
+      loginWithNaver()
+    } catch {
+      setError('네이버 로그인을 시작할 수 없습니다')
+    }
+  }
+
   const openEmailForm = () => setShowEmailForm(true)
 
   const closeEmailForm = () => {
@@ -66,6 +86,8 @@ export function useLoginViewModel() {
     error,
     isLoading,
     handleEmailLogin,
+    handleKakaoLogin,
+    handleNaverLogin,
     openEmailForm,
     closeEmailForm
   }

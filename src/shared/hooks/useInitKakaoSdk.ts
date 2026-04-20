@@ -13,7 +13,7 @@ const useInitKakaoSdk = () => {
     document.head.appendChild(script)
 
     const onLoad = () => {
-      window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_API_JS_KEY || '')
+      window.Kakao?.init(process.env.NEXT_PUBLIC_KAKAO_API_JS_KEY || '')
     }
 
     script.addEventListener('load', onLoad)
