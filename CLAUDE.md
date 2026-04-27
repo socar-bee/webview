@@ -1,75 +1,58 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+이 파일은 매 세션 자동 로딩되는 **프로젝트 컨텍스트 인덱스**입니다. 짧게 유지하고, 자세한 내용은 `docs/` 하위 문서를 참고하세요.
+
+## Stack
+
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind · TanStack Query v5 · Zustand v5 · framer-motion · Naver Maps · pnpm · Node ^24.12.0.
 
 ## Commands
 
 ```bash
-pnpm dev          # Start dev server (Turbopack, APP_ENV=local)
-pnpm build        # Type-check + Next.js build
+pnpm dev          # Turbopack, APP_ENV=local, 포트 5173
+pnpm build        # type-check + next build
 pnpm type-check   # tsc --noEmit
 pnpm lint         # ESLint
 pnpm format       # Prettier
 ```
 
-No test runner is configured. Pre-commit hook runs `eslint --fix` + `prettier --write` via lint-staged.
+테스트 러너 미설정. 커밋 전 lint-staged hook이 `eslint --fix` + `prettier --write` 자동 실행. TypeScript 편집 후 `pnpm eslint src --ext .ts,.tsx --fix`로 import 순서 정리.
 
-After editing any TypeScript file, run `pnpm eslint src --ext .ts,.tsx --fix` to auto-fix `import/order` violations before committing.
-
-## Architecture
-
-### Route structure
-
-Every route follows this MVVM layout:
+## 라우트 구조 (MVVM)
 
 ```
 src/app/<route>/
-  model/
-    types.ts      # TypeScript types / interfaces
-    api.ts        # axios API calls (no hooks)
-    queries.ts    # TanStack Query hooks (useQuery, query key factories)
-    index.ts      # re-exports
-  view/
-    <Name>View.tsx  # UI component, imports from ../viewmodel
-    index.ts
-  viewmodel/
-    use<Name>ViewModel.ts  # state + query integration
-    index.ts
-  routes.ts       # <NAME>_ROUTES constants
-  page.tsx        # thin shell: `import View from './view'; export default View`
+  model/{types,api,queries,index}.ts
+  view/{<Name>View.tsx,index.ts}
+  viewmodel/{use<Name>ViewModel.ts,index.ts}
+  routes.ts
+  page.tsx     // thin shell
 ```
 
-Routes that don't yet have this structure should be migrated to it.
+새 라우트도 이 구조로 정렬한다. View는 viewmodel만 import.
 
-### State management
+## 도메인별 상세 가이드 (`docs/`)
 
-- **Server state**: TanStack Query v5. `QueryProvider` wraps the root layout (`src/shared/providers/QueryProvider.tsx`). Default `staleTime: 60_000`, `retry: 1`.
-- **Client state**: Zustand v5. Auth store at `src/shared/stores/authStore.ts` with localStorage persistence.
+| #   | 파일                                                         | 다루는 영역                                                                                    |
+| --- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| 01  | [docs/01-architecture.md](./docs/01-architecture.md)         | MVVM, 상태(Query/Zustand), 프로바이더, path alias                                              |
+| 02  | [docs/02-api-layer.md](./docs/02-api-layer.md)               | `apiClient` vs `advanceApiClient`, preview baseUrl 정책, `parkingDate`/`durationId` query 규칙 |
+| 03  | [docs/03-map-system.md](./docs/03-map-system.md)             | 네이버 지도 init/bounds, 마커 캐싱·클러스터, **"setCenter ≠ idle" 함정**                       |
+| 04  | [docs/04-reservation-flow.md](./docs/04-reservation-flow.md) | 제휴주차장 예매 플로우, ticket list/detail, ParkingDetailSheet 스크롤-스파이                   |
+| 05  | [docs/05-ui-patterns.md](./docs/05-ui-patterns.md)           | AnimationSheet 3-snap, DockBar/아이콘, **hydration 안전 패턴**, Lottie 로더                    |
+| 06  | [docs/06-conventions.md](./docs/06-conventions.md)           | 네이밍/import 순서/커밋 스타일/ESLint·Prettier                                                 |
 
-### HTTP
+## 핵심 함정 모음 (긴급 참고)
 
-All API calls use axios. Two clients:
+- **지도 핀 미표시**: programmatic `setCenter` 후 Naver `idle`이 발화하지 않을 수 있음 → `updateBoundsRef.current?.()`로 수동 동기화. ([03-map-system.md](./docs/03-map-system.md#함정-setcenter--idle))
+- **Hydration mismatch**: `useState` 초기값에서 `localStorage`/`window` 읽지 말 것 → `useEffect` 마운트 후 동기화. ([05-ui-patterns.md](./docs/05-ui-patterns.md#hydration-안전-패턴))
+- **시간필터 누락**: 사전예약 endpoint는 `parkingDate`/`durationId` 필수 — query string으로 carry, queryKey에 포함. ([02-api-layer.md](./docs/02-api-layer.md#parkingdate--durationid-query-규칙))
+- **잘못된 axios client**: 사전예약(advance purchase) preview는 반드시 `advanceApiClient` 사용. ([02-api-layer.md](./docs/02-api-layer.md))
 
-- `src/shared/lib/apiClient.ts` — baseURL: `NEXT_PUBLIC_MODU_API_HOST`
-- `src/app/(tabs)/map/model/api.ts` — `advanceApiClient`, baseURL: `https://moduapi-dev-preview-advance-purchase.socar.me` (map/parking-specific)
+## 패키지 매니저 / Node
 
-### Key shared components
+`pnpm` · Node `^24.12.0` (`.nvmrc`: `24`). Husky + lint-staged 사전 커밋 hook 사용. `--no-verify` 사용 금지.
 
-- `src/shared/components/ui/AnimationSheet.tsx` — framer-motion bottom sheet with 3 snap points (`peek` / `half` / `full`). Clicking the drag handle closes the sheet.
-- `src/shared/components/map/TimeFilterSheet.tsx` — bottom sheet positioned above the Dock via `style={{ bottom: 'var(--dock-height, 0px)' }}`
-- `src/shared/components/layout/DockBar.tsx` — sets `--dock-height` CSS variable via ResizeObserver
+## 문서 갱신
 
-### Map tab specifics
-
-- Naver Maps API loaded dynamically in `MapView.tsx`; init called via `vm.initMap()`
-- Sheet open state: `?sheet=1` query param only (no `parking=` or hash)
-- Marker icon caching: keyed by `markerType|label|ticketName|ticketPrice|isOn` fingerprint stored in `markerIconCache` ref
-- Pin fingerprinting: `pinFingerprints` ref skips redrawing markers whose visual state hasn't changed
-
-### Path aliases
-
-`@/*` → `src/*`
-
-### Node version
-
-Requires Node ^24.12.0 (see `.nvmrc` → `24`).
+새 함정/패턴이 생기면 해당 `docs/0X-*.md`에 등재 + (필요시) 이 파일의 "핵심 함정 모음"에 한 줄 추가.
