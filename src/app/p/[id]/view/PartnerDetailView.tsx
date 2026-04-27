@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import DockBar from '@/shared/components/layout/DockBar'
+import MapPinLoader from '@/shared/components/map/MapPinLoader'
 import { type SheetSnap } from '@/shared/components/ui/AnimationSheet'
 
 import type { ParkingLotDetail, ParkingLotType } from '@/shared/types/parking'
@@ -144,14 +145,8 @@ export default function PartnerDetailView({ seq, initialDetail }: PartnerDetailV
         {/* 풀스크린 지도 (useMapViewModel은 id="map"을 찾음) */}
         <div id="map" className="size-full" />
 
-        {/* Loading */}
-        {vm.isLoading && (
-          <div className="bg-bg-white shadow-02 absolute top-[68px] left-1/2 z-[var(--z-map-ui)] -translate-x-1/2 rounded-full px-4 py-2">
-            <span className="text-text-sub" style={{ fontSize: 'var(--font-size-c2)' }}>
-              주차장 검색중...
-            </span>
-          </div>
-        )}
+        {/* Loading — 정중앙 Lottie 애니메이션 */}
+        <MapPinLoader show={vm.isLoading} />
 
         {/* ParkingDetailSheet */}
         <ParkingDetailSheet

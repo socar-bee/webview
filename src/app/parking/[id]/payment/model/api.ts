@@ -14,8 +14,12 @@ import type {
   RequestVerifyCodePayload
 } from '@/shared/types/purchase'
 
-export async function fetchDailyAbleTime(seq: string | number): Promise<AbleTime[]> {
-  const { data } = await apiClient.get<{ data: { ableTimes: AbleTime[] } }>(`/ticket/${seq}/daily-able-time`)
+import { advanceApiClient } from '@/app/(tabs)/map/model/api'
+
+export async function fetchDailyAbleTime(seq: string | number, parkingDate: string): Promise<AbleTime[]> {
+  const { data } = await advanceApiClient.get<{ data: { ableTimes: AbleTime[] } }>(`/ticket/${seq}/daily-able-time`, {
+    params: { parkingDate }
+  })
   return data.data.ableTimes
 }
 

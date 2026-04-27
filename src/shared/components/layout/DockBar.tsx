@@ -1,33 +1,43 @@
 'use client'
 
 import Lottie from 'lottie-react'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-
-import { IcoHome, IcoMyPage, IcoNearby, IcoReviews, IcoTickets } from '@/shared/components/icons'
 
 import reviewDockIntro from '@/shared/assets/lottie/reviewDockIntro.json'
 
 const REVIEW_INTRO_STORAGE_KEY = 'modu_dock_review_intro_seen'
 
-const NAV_ITEMS = [
-  { label: '홈', href: '/', icon: IcoHome },
-  { label: '후기', href: '/reviews', icon: IcoReviews },
-  { label: '내 주변', href: '/map', icon: IcoNearby },
-  { label: '내 주차권', href: '/tickets', icon: IcoTickets },
-  { label: 'MY', href: '/my', icon: IcoMyPage }
+type NavItem = {
+  label: string
+  href: string
+  icon?: React.ComponentType<{ active: boolean }>
+  imageSrc?: string
+}
+
+const NAV_ITEMS: readonly NavItem[] = [
+  { label: '홈', href: '/', imageSrc: '/images/dock_home.webp' },
+  { label: '후기', href: '/reviews', imageSrc: '/images/dock_reviews.webp' },
+  { label: '내 주변', href: '/map', imageSrc: '/images/dock_map_pin.webp' },
+  { label: '내 주차권', href: '/tickets', imageSrc: '/images/dock_tickets.webp' },
+  { label: 'MY', href: '/my', imageSrc: '/images/dock_my.webp' }
 ] as const
 
 export default function DockBar() {
   const pathname = usePathname()
   const router = useRouter()
   const navRef = useRef<HTMLElement>(null)
-  const [showReviewIntro, setShowReviewIntro] = useState(() => {
-    if (typeof window === 'undefined') return false
-    if (localStorage.getItem(REVIEW_INTRO_STORAGE_KEY) === '1') return false
+  const [showReviewIntro, setShowReviewIntro] = useState(false)
+
+  // localStorage는 클라이언트에서만 접근 가능 → 마운트 후 판정해 hydration mismatch 회피
+  useEffect(() => {
+    if (localStorage.getItem(REVIEW_INTRO_STORAGE_KEY) === '1') return
     localStorage.setItem(REVIEW_INTRO_STORAGE_KEY, '1')
-    return true
-  })
+    // 마운트 직후 1회만 인트로 활성화 — 외부 의존성 없는 일회성 동기화이므로 의도적 예외
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShowReviewIntro(true)
+  }, [])
 
   // 시트/오버레이에서 참조할 수 있도록 dock 높이를 :root CSS 변수로 노출
   useEffect(() => {
@@ -80,9 +90,18 @@ export default function DockBar() {
                     onComplete={handleReviewIntroComplete}
                   />
                 </span>
-              ) : (
+              ) : item.imageSrc ? (
+                <span
+                  className={`flex size-6 items-center justify-center transition-[filter,opacity] ${
+                    isActive ? '' : 'opacity-60 grayscale'
+                  }`}
+                  aria-hidden="true"
+                >
+                  <Image src={item.imageSrc} alt="" width={24} height={24} className="object-contain" priority />
+                </span>
+              ) : Icon ? (
                 <Icon active={isActive} />
-              )}
+              ) : null}
               <span
                 className={`text-[10px] leading-[14px] ${isActive ? 'text-primary font-medium' : 'text-[#222222]'}`}
               >

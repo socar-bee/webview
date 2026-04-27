@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
+import { resolveParkingDate } from '@/shared/lib/date'
+
 import type { ParkingLotDetail, ParkingLotType, TicketListItem } from '@/shared/types/parking'
 
 import { fetchParkingLotDetail, fetchTicketList } from './api'
@@ -7,7 +9,8 @@ import { fetchParkingLotDetail, fetchTicketList } from './api'
 export const parkingQueryKeys = {
   all: ['parking'] as const,
   detail: (seq: number, type: string) => [...parkingQueryKeys.all, 'detail', seq, type] as const,
-  tickets: (seq: number) => [...parkingQueryKeys.all, 'tickets', seq] as const
+  tickets: (seq: number, parkingDate: string, durationId?: string) =>
+    [...parkingQueryKeys.all, 'tickets', seq, parkingDate, durationId ?? null] as const
 }
 
 export function useParkingLotDetail(seq: number | null, type?: ParkingLotType, initialData?: ParkingLotDetail) {
@@ -20,10 +23,14 @@ export function useParkingLotDetail(seq: number | null, type?: ParkingLotType, i
   })
 }
 
-export function useTicketList(seq: number | null) {
+export function useTicketList(seq: number | null, parkingDate?: string, durationId?: string) {
+  const resolvedDate = resolveParkingDate(parkingDate)
   return useQuery<TicketListItem[]>({
-    queryKey: seq !== null ? parkingQueryKeys.tickets(seq) : [...parkingQueryKeys.all, 'tickets', null],
-    queryFn: () => fetchTicketList(seq!),
+    queryKey:
+      seq !== null
+        ? parkingQueryKeys.tickets(seq, resolvedDate, durationId)
+        : [...parkingQueryKeys.all, 'tickets', null],
+    queryFn: () => fetchTicketList(seq!, resolvedDate, durationId),
     enabled: seq !== null,
     staleTime: 60_000
   })

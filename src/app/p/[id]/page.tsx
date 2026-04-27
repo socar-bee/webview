@@ -3,6 +3,7 @@ import { cache } from 'react'
 
 import LdJson from '@/shared/components/scripts/LdJson'
 
+import { resolveParkingDate } from '@/shared/lib/date'
 import { META_KEYWORDS, SEO_BLOCK_PARKINGLOT_SEQ_LIST, removeOperatorPrefix } from '@/shared/lib/seo'
 
 import type { Metadata } from 'next'
@@ -13,6 +14,7 @@ import PartnerDetailView from './view'
 
 interface PageProps {
   params: Promise<{ id: string }>
+  searchParams?: Promise<{ parkingDate?: string; durationId?: string }>
 }
 
 export const revalidate = 600
@@ -20,14 +22,16 @@ export const revalidate = 600
 const getParkingDetail = cache(fetchParkingLotDetail)
 const getTicketList = cache(fetchTicketList)
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { id } = await params
+  const sp = (await searchParams) ?? {}
 
   try {
     const detail = await getParkingDetail(id, 'P' as never)
     if (!detail) return notFound()
 
-    const tickets = await getTicketList(id)
+    const parkingDate = resolveParkingDate(sp.parkingDate)
+    const tickets = await getTicketList(id, parkingDate, sp.durationId)
     const ticketsJoin = tickets.map((t) => `${t.couponName}: ${t.price}원`).join(',')
     const ticketDesc = ticketsJoin ? `${ticketsJoin}을 판매합니다.` : ''
 
@@ -65,7 +69,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function PartnerParkingPage({ params }: PageProps) {
+export default async function PartnerParkingPage({ params, searchParams }: PageProps) {
   const { id } = await params
   const seq = Number(id)
 
@@ -76,7 +80,7 @@ export default async function PartnerParkingPage({ params }: PageProps) {
     return notFound()
   }
 
-  const meta = await generateMetadata({ params })
+  const meta = await generateMetadata({ params, searchParams })
   const jsonTitle = String(meta.title ?? '모두의주차장 - 주변 주차장 찾기')
   const jsonDesc =
     typeof meta.description === 'string'

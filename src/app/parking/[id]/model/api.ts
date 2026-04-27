@@ -1,5 +1,3 @@
-import apiClient from '@/shared/lib/apiClient'
-
 import type { ParkingLotDetail, ParkingLotType, TicketDetail, TicketListItem } from '@/shared/types/parking'
 
 import { advanceApiClient } from '@/app/(tabs)/map/model/api'
@@ -12,14 +10,24 @@ export async function fetchParkingLotDetail(
   return data.data
 }
 
-export async function fetchTicketList(parkinglotSeq: string | number): Promise<TicketListItem[]> {
-  const { data } = await apiClient.get<{ data: { tickets: TicketListItem[] } }>('/ticket/list', {
-    params: { parkinglotSeq }
+export async function fetchTicketList(
+  parkinglotSeq: string | number,
+  parkingDate: string,
+  durationId?: string
+): Promise<TicketListItem[]> {
+  const { data } = await advanceApiClient.get<{ data: { tickets: TicketListItem[] } }>('/ticket/list', {
+    params: {
+      parkinglotSeq,
+      parkingDate,
+      ...(durationId ? { durationId } : {})
+    }
   })
   return data.data.tickets
 }
 
-export async function fetchTicketDetail(couponSeq: string | number): Promise<TicketDetail> {
-  const { data } = await apiClient.get<{ data: TicketDetail }>(`/ticket/${couponSeq}`)
+export async function fetchTicketDetail(couponSeq: string | number, parkingDate: string): Promise<TicketDetail> {
+  const { data } = await advanceApiClient.get<{ data: TicketDetail }>(`/ticket/${couponSeq}`, {
+    params: { parkingDate }
+  })
   return data.data
 }

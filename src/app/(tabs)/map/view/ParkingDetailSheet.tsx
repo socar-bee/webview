@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import AnimationSheet, { type SheetSnap } from '@/shared/components/ui/AnimationSheet'
 
@@ -11,7 +11,12 @@ import type { RecommendParking } from '@/app/parking/[id]/viewmodel'
 
 import type { ParkingLotTimeContent, ParkingLotType } from '@/shared/types/parking'
 
-import { DETAIL_TABS, useParkingDetailViewModel, useRecommendParkingViewModel } from '@/app/parking/[id]/viewmodel'
+import {
+  DETAIL_TABS,
+  type DetailTabKey,
+  useParkingDetailViewModel,
+  useRecommendParkingViewModel
+} from '@/app/parking/[id]/viewmodel'
 
 export interface ParkingDetailData {
   seq: number
@@ -40,23 +45,99 @@ export default function ParkingDetailSheet({
 }: ParkingDetailSheetProps) {
   const vm = useParkingDetailViewModel(data?.seq ?? null, data?.parkingType)
   const tabsRef = useRef<HTMLDivElement>(null)
+  const ticketsSectionRef = useRef<HTMLDivElement>(null)
+  const infoSectionRef = useRef<HTMLDivElement>(null)
+  const recommendSectionRef = useRef<HTMLDivElement>(null)
+  const nearbySectionRef = useRef<HTMLDivElement>(null)
+  const isScrollingByClickRef = useRef(false)
 
-  const handleTabClick = useCallback(
-    (key: string) => {
-      vm.setActiveTab(key as Parameters<typeof vm.setActiveTab>[0])
-      // 스크롤 컨테이너(AnimationSheet body)를 찾아 최상단으로 초기화
-      const el = tabsRef.current
-      if (!el) return
-      let container = el.parentElement
-      while (container) {
-        const { overflowY } = getComputedStyle(container)
-        if (overflowY === 'auto' || overflowY === 'scroll') break
-        container = container.parentElement
-      }
-      if (container) container.scrollTop = 0
-    },
-    [vm]
+  const [activeSection, setActiveSection] = useState<DetailTabKey>('tickets')
+
+  const sectionRefs = useMemo<Record<DetailTabKey, React.RefObject<HTMLDivElement | null>>>(
+    () => ({
+      tickets: ticketsSectionRef,
+      info: infoSectionRef,
+      recommend: recommendSectionRef,
+      nearby: nearbySectionRef
+    }),
+    []
   )
+
+  const getScrollContainer = useCallback((): HTMLElement | null => {
+    const el = tabsRef.current
+    if (!el) return null
+    let container: HTMLElement | null = el.parentElement
+    while (container) {
+      if (container.hasAttribute('data-sheet-scroll-body')) return container
+      container = container.parentElement
+    }
+    return null
+  }, [])
+
+  const scrollToSection = useCallback(
+    (key: DetailTabKey) => {
+      const container = getScrollContainer()
+      const target = sectionRefs[key].current
+      if (!container || !target) return
+      const tabsHeight = tabsRef.current?.offsetHeight ?? 0
+
+      isScrollingByClickRef.current = true
+      setActiveSection(key)
+      container.scrollTo({ top: target.offsetTop - tabsHeight, behavior: 'smooth' })
+
+      // 스크롤 종료 감지 후 flag 해제 (스크롤 중 IntersectionObserver가 activeSection을 덮어쓰지 않게)
+      let timer: ReturnType<typeof setTimeout>
+      const onScroll = () => {
+        clearTimeout(timer)
+        timer = setTimeout(() => {
+          isScrollingByClickRef.current = false
+          container.removeEventListener('scroll', onScroll)
+        }, 100)
+      }
+      container.addEventListener('scroll', onScroll, { passive: true })
+    },
+    [getScrollContainer, sectionRefs]
+  )
+
+  // 섹션 스크롤 스파이 — full 상태일 때만 활성화
+  useEffect(() => {
+    if (!isOpen) return
+    const container = getScrollContainer()
+    const tabsEl = tabsRef.current
+    if (!container || !tabsEl) return
+
+    const tabsHeight = tabsEl.offsetHeight
+    const entries = (Object.keys(sectionRefs) as DetailTabKey[])
+      .map((key) => ({ key, el: sectionRefs[key].current }))
+      .filter((e): e is { key: DetailTabKey; el: HTMLDivElement } => e.el !== null)
+
+    const observer = new IntersectionObserver(
+      (obs) => {
+        if (isScrollingByClickRef.current) return
+        obs.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const key = entry.target.getAttribute('data-section') as DetailTabKey | null
+            if (key) setActiveSection(key)
+          }
+        })
+      },
+      { root: container, rootMargin: `-${tabsHeight}px 0px -80% 0px`, threshold: 0 }
+    )
+
+    entries.forEach(({ key, el }) => {
+      el.setAttribute('data-section', key)
+      observer.observe(el)
+    })
+
+    return () => observer.disconnect()
+  }, [isOpen, getScrollContainer, sectionRefs])
+
+  // 새 주차장으로 바뀌면 스크롤 초기화 + 기본 섹션으로 리셋
+  useEffect(() => {
+    const container = getScrollContainer()
+    if (container) container.scrollTop = 0
+    setActiveSection('tickets')
+  }, [data?.seq, getScrollContainer])
 
   const lat = vm.detail?.basic.latitude
   const lng = vm.detail?.basic.longitude
@@ -149,15 +230,15 @@ export default function ParkingDetailSheet({
           </div>
         )}
 
-        {/* Tabs */}
+        {/* Tabs — sticky 상단. 클릭 시 해당 섹션으로 스크롤 */}
         <div ref={tabsRef} className="border-stroke-soft bg-bg-white sticky top-0 z-10 border-b">
           <div className="flex">
             {DETAIL_TABS.map((tab) => {
-              const isActive = tab.key === vm.activeTab
+              const isActive = tab.key === activeSection
               return (
                 <button
                   key={tab.key}
-                  onClick={() => handleTabClick(tab.key)}
+                  onClick={() => scrollToSection(tab.key)}
                   className={`flex flex-1 items-end justify-center pt-[14px] pb-0 transition-colors ${
                     isActive ? 'text-text-strong' : 'text-text-disabled'
                   }`}
@@ -172,23 +253,26 @@ export default function ParkingDetailSheet({
           </div>
         </div>
 
-        {/* Tab content */}
-        <div>
-          {vm.activeTab === 'tickets' && (
-            <TicketsTab tickets={vm.tickets} isLoading={vm.isLoading} onBuy={vm.goToPayment} />
-          )}
-          {vm.activeTab === 'info' && (
-            <InfoTab
-              detail={detail}
-              isLoading={vm.isLoading}
-              onCopyAddress={vm.copyAddress}
-              formatCurrentFee={vm.formatCurrentFee}
-            />
-          )}
-          {vm.activeTab === 'recommend' && (
-            <RecommendTab seq={data.seq} lat={detail?.basic.latitude} lng={detail?.basic.longitude} />
-          )}
-          {vm.activeTab === 'nearby' && <NearbyTab detail={detail} />}
+        {/* 단일 스크롤 컨테이너 — 모든 섹션을 세로로 나열. 탭은 sticky, 스크롤에 따라 activeSection 업데이트 */}
+        <div ref={ticketsSectionRef} className="bg-bg-white">
+          <TicketsTab tickets={vm.tickets} isLoading={vm.isLoading} onBuy={vm.goToPayment} />
+        </div>
+        <div className="bg-bg-weak h-2.5" />
+        <div ref={infoSectionRef} className="bg-bg-white">
+          <InfoTab
+            detail={detail}
+            isLoading={vm.isLoading}
+            onCopyAddress={vm.copyAddress}
+            formatCurrentFee={vm.formatCurrentFee}
+          />
+        </div>
+        <div className="bg-bg-weak h-2.5" />
+        <div ref={recommendSectionRef} className="bg-bg-white">
+          <RecommendTab seq={data.seq} lat={detail?.basic.latitude} lng={detail?.basic.longitude} />
+        </div>
+        <div className="bg-bg-weak h-2.5" />
+        <div ref={nearbySectionRef} className="bg-bg-white">
+          <NearbyTab detail={detail} />
         </div>
 
         {/* Footer */}

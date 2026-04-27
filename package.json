@@ -6,13 +6,13 @@
     "node": "^24.12.0"
   },
   "scripts": {
-    "dev": "APP_ENV=local next dev -H 0.0.0.0 --turbopack",
+    "dev": "APP_ENV=local next dev -H 0.0.0.0 -p 5173 --turbopack",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "pnpm type-check && next build",
-    "start": "next start",
+    "start": "next start -p 5173",
     "prepare": "husky"
   },
   "dependencies": {

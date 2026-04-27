@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import MapPinLoader from '@/shared/components/map/MapPinLoader'
 import TimeFilterSheet, { formatDateLabel } from '@/shared/components/map/TimeFilterSheet'
 import { type SheetSnap } from '@/shared/components/ui/AnimationSheet'
 import Toast from '@/shared/components/ui/Toast'
@@ -226,14 +227,8 @@ export default function MapView() {
         </svg>
       </button>
 
-      {/* Loading */}
-      {vm.isLoading && (
-        <div className="bg-bg-white shadow-02 absolute top-[108px] left-1/2 z-[var(--z-map-ui)] -translate-x-1/2 rounded-full px-4 py-2">
-          <span className="text-text-sub" style={{ fontSize: 'var(--font-size-c2)' }}>
-            주차장 검색중...
-          </span>
-        </div>
-      )}
+      {/* Loading — 정중앙 Lottie 애니메이션 */}
+      <MapPinLoader show={vm.isLoading} />
 
       {/* Time Filter Bottom Sheet */}
       {vm.timeFilterOptions && (

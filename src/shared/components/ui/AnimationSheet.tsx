@@ -273,6 +273,7 @@ export default function AnimationSheet({
            *   - peek/half: overflow-y: hidden + touch-action: none → 스크롤 없음. 본문에서 시작된 포인터도 드래그로 연결. */}
           <div
             ref={bodyRef}
+            data-sheet-scroll-body
             className="scrollbar-hide min-h-0 flex-1"
             style={{
               overflowY: snap === 'full' ? 'auto' : 'hidden',

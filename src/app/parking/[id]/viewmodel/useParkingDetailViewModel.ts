@@ -1,7 +1,7 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useCallback, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useMemo, useState } from 'react'
 
 import { useParkingLotDetail, useTicketList } from '../model'
 import type { ParkingLotDetail, ParkingLotType } from '@/shared/types/parking'
@@ -17,10 +17,22 @@ export const DETAIL_TABS: { key: DetailTabKey; label: string }[] = [
 
 export function useParkingDetailViewModel(seq: number | null, type?: ParkingLotType, initialDetail?: ParkingLotDetail) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<DetailTabKey>('tickets')
 
+  const parkingDate = searchParams?.get('parkingDate') ?? undefined
+  const durationId = searchParams?.get('durationId') ?? undefined
+
+  const carryQuery = useMemo(() => {
+    const p = new URLSearchParams()
+    if (parkingDate) p.set('parkingDate', parkingDate)
+    if (durationId) p.set('durationId', durationId)
+    const s = p.toString()
+    return s ? `&${s}` : ''
+  }, [parkingDate, durationId])
+
   const { data: detail, isLoading: isDetailLoading } = useParkingLotDetail(seq, type, initialDetail)
-  const { data: tickets, isLoading: isTicketsLoading } = useTicketList(activeTab === 'tickets' ? seq : null)
+  const { data: tickets, isLoading: isTicketsLoading } = useTicketList(seq, parkingDate, durationId)
 
   const isLoading = isDetailLoading || isTicketsLoading
 
@@ -33,9 +45,9 @@ export function useParkingDetailViewModel(seq: number | null, type?: ParkingLotT
   const goToPayment = useCallback(
     (couponSeq: number) => {
       if (!seq) return
-      router.push(`/parking/${seq}/payment?couponSeq=${couponSeq}`)
+      router.push(`/parking/${seq}/payment?couponSeq=${couponSeq}${carryQuery}`)
     },
-    [seq, router]
+    [seq, router, carryQuery]
   )
 
   /** 현장 요금 포맷: calcPrices에서 60분(1시간) 기준 찾거나 첫 항목 사용 */
