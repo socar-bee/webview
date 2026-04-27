@@ -343,6 +343,9 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
 
   // ─── Marker Overlay (줌/바운드 기반 표시/숨김) ───
 
+  // 지도 bounds → React state 갱신 헬퍼. initMap에서 정의되며, setCenter 등 프로그램적 이동 후 수동 호출용.
+  const updateBoundsRef = useRef<(() => void) | null>(null)
+
   const handleMarkerOverlay = useCallback((marker: naver.maps.Marker) => {
     if (!mapRef.current) return
     const zoom = mapRef.current.getZoom()
@@ -453,6 +456,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
   const centerOnLatLng = useCallback((lat: number, lng: number) => {
     if (!mapRef.current) return
     mapRef.current.setCenter(new naver.maps.LatLng(lat, lng))
+    updateBoundsRef.current?.()
   }, [])
 
   // ─── Ticket Group Pins ───
@@ -597,6 +601,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
       const position = new naver.maps.LatLng(coords.lat, coords.lng)
       mapRef.current.setCenter(position)
       mapRef.current.setZoom(DEFAULT_ZOOM)
+      updateBoundsRef.current?.()
 
       // 이전 현재위치 핀 제거 후 검색 위치에 핀 표시
       if (currentPositionMarkerRef.current) {
@@ -646,7 +651,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
       moveToSearchCoords(coords)
     }
 
-    // ── bounds 갱신 헬퍼 (init + idle 공용) ──
+    // ── bounds 갱신 헬퍼 (init + idle + 프로그램적 setCenter 공용) ──
     const updateBounds = () => {
       const bounds = getBoundsFromMap()
       if (bounds) {
@@ -655,6 +660,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
         setGeohashes(hashes)
       }
     }
+    updateBoundsRef.current = updateBounds
 
     // 최초 렌더링 시 idle 이벤트가 발생하지 않으므로 수동으로 한 번 실행
     updateBounds()
@@ -688,6 +694,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
           if (!mapRef.current) return
           const position = new naver.maps.LatLng(pos.coords.latitude, pos.coords.longitude)
           mapRef.current.setCenter(position)
+          updateBoundsRef.current?.()
           if (!showPin) return
           if (currentPositionMarkerRef.current) {
             currentPositionMarkerRef.current.setMap(null)
@@ -727,6 +734,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
           if (!mapRef.current) return
           const position = new naver.maps.LatLng(pos.coords.latitude, pos.coords.longitude)
           mapRef.current.setCenter(position)
+          updateBoundsRef.current?.()
 
           if (!showPin) return
 
