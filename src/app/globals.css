@@ -345,6 +345,12 @@ body {
   color: var(--color-text-strong);
   /* 내부 스크롤 체인 차단 */
   overscroll-behavior-y: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

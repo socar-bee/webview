@@ -131,7 +131,10 @@ export default function PartnerDetailView({ seq, initialDetail }: PartnerDetailV
       <main className="relative min-h-0 flex-1">
         {/* Search Bar */}
         <div className="absolute top-0 left-0 z-[var(--z-map-ui)] flex w-full flex-col gap-2.5 px-4 pt-2">
-          <Link href="/search" className="rounded-10 bg-bg-white shadow-02 flex h-12 w-full items-center gap-2.5 px-4">
+          <Link
+            href="/search"
+            className="rounded-10 bg-bg-white shadow-02 flex h-12 w-full cursor-pointer items-center gap-2.5 px-4"
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <circle cx="11" cy="11" r="7" stroke="#A3A3A3" strokeWidth="1.8" />
               <path d="M16 16L20 20" stroke="#A3A3A3" strokeWidth="1.8" strokeLinecap="round" />
