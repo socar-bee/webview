@@ -18,6 +18,7 @@ import ParkingDetailSheet, { type ParkingDetailData } from './ParkingDetailSheet
 interface ToastState {
   id: number
   message: string
+  duration?: number
 }
 
 export default function MapView() {
@@ -42,6 +43,7 @@ export default function MapView() {
   const latParam = searchParams.get('lat')
   const lngParam = searchParams.get('lng')
   const searchCoords = latParam && lngParam ? { lat: parseFloat(latParam), lng: parseFloat(lngParam) } : null
+  const initialBuyableOnly = searchParams.get('buyable') === '1'
 
   // mount + hashchange + popstate → hash에서 sheet 상태 동기화
   useEffect(() => {
@@ -65,8 +67,8 @@ export default function MapView() {
     setDetailOpen(false)
   }
 
-  const showToast = useCallback((message: string) => {
-    setToast({ id: Date.now(), message })
+  const showToast = useCallback((message: string, duration?: number) => {
+    setToast({ id: Date.now(), message, duration })
   }, [])
 
   const vm = useMapViewModel({
@@ -81,9 +83,10 @@ export default function MapView() {
       }
     },
     searchCoords,
+    initialBuyableOnly,
     onPinClick: (data: ParkingDetailData) => {
       if (data.parkingType === ParkingLotType.SHARE) {
-        showToast('준비중인 서비스에요')
+        showToast('준비중인 서비스입니다')
         return
       }
       // 핀 직접 클릭 → 이미 지도에 보이므로 location 수신 후 지도 이동 불필요
@@ -130,6 +133,15 @@ export default function MapView() {
     },
     [centerOnLatLng]
   )
+
+  // buyableOnly 필터 결과 없을 때 토스트, 다시 생기면 닫기
+  useEffect(() => {
+    if (vm.buyableEmpty) {
+      showToast('이 지역에 구매 가능한 주차장이 없습니다', 99999999)
+    } else {
+      setToast(null)
+    }
+  }, [vm.buyableEmpty, showToast])
 
   const handleConsentAllow = () => {
     localStorage.setItem('modu_location_consent', 'granted')
@@ -254,7 +266,12 @@ export default function MapView() {
         onLocationKnown={handleLocationKnown}
       />
 
-      <Toast id={toast?.id} message={toast?.message ?? null} onDismiss={() => setToast(null)} duration={1000} />
+      <Toast
+        id={toast?.id}
+        message={toast?.message ?? null}
+        onDismiss={() => setToast(null)}
+        duration={toast?.duration ?? 1000}
+      />
 
       {showConsent && <LocationConsentSheet onAllow={handleConsentAllow} onDeny={handleConsentDeny} />}
     </div>

@@ -36,6 +36,8 @@ export interface UseMapViewModelOptions {
   searchCoords?: { lat: number; lng: number } | null
   /** 핀 클릭 시 호출 */
   onPinClick?: (data: ParkingDetailData) => void
+  /** URL ?buyable=1 진입 시 구매가능 필터 초기 활성화 */
+  initialBuyableOnly?: boolean
 }
 
 export function useMapViewModel(options: UseMapViewModelOptions = {}) {
@@ -92,8 +94,9 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
   const [timeFilter, setTimeFilter] = useState<TimeFilterDefaults | null>(null)
 
   // ─── 구매가능 필터 토글 ───
-  const [buyableOnly, setBuyableOnly] = useState(false)
-  const buyableOnlyRef = useRef(false)
+  const [buyableOnly, setBuyableOnly] = useState(() => options.initialBuyableOnly ?? false)
+  const buyableOnlyRef = useRef(options.initialBuyableOnly ?? false)
+  const [buyableEmpty, setBuyableEmpty] = useState(false)
 
   // ─── TanStack Query ───
   const { data: timeFilterOptions } = useTimeFilterOptions()
@@ -555,6 +558,11 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
       if ((mapRef.current?.getZoom() ?? DEFAULT_ZOOM) <= MAX_CLUSTER_ZOOM) {
         createClusters()
       }
+      // 구매가능 필터 ON일 때 visible 마커 0개면 토스트
+      if (buyableOnlyRef.current) {
+        const visible = Object.values(cachedMarkers.current).filter((m) => m.getMap() !== null).length
+        setBuyableEmpty(visible === 0)
+      }
     }
   }, [pinsGroups, drawPins, createClusters])
 
@@ -575,13 +583,17 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
   // ─── 구매가능 필터 토글 → 기존 마커에 즉시 반영 ───
 
   const toggleBuyableOnly = useCallback(() => {
-    setBuyableOnly((prev) => {
-      const next = !prev
-      buyableOnlyRef.current = next
-      // 모든 마커에 대해 overlay 재계산 (필터 적용/해제)
-      Object.values(cachedMarkers.current).forEach(handleMarkerOverlay)
-      return next
-    })
+    const next = !buyableOnlyRef.current
+    buyableOnlyRef.current = next
+    setBuyableOnly(next)
+    // 모든 마커에 대해 overlay 재계산 (필터 적용/해제)
+    Object.values(cachedMarkers.current).forEach(handleMarkerOverlay)
+    if (!next) {
+      setBuyableEmpty(false)
+    } else {
+      const visible = Object.values(cachedMarkers.current).filter((m) => m.getMap() !== null).length
+      setBuyableEmpty(visible === 0)
+    }
   }, [handleMarkerOverlay])
 
   // ─── Time Filter Handlers ───
@@ -779,6 +791,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
     closeTimeFilter: useCallback(() => setIsTimeFilterOpen(false), []),
     handleTimeFilterConfirm,
     buyableOnly,
+    buyableEmpty,
     toggleBuyableOnly,
     clearSelectedPin,
     selectPin,
