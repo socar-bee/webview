@@ -1,15 +1,17 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+
+import { addRecentSearch } from '@/shared/hooks/useRecentSearches'
 
 import { fetchSearchPlace, type SearchPlace } from '../model'
 
-export function useSearchViewModel() {
+export function useSearchViewModel(initialKeyword?: string) {
   const router = useRouter()
-  const [searchText, setSearchText] = useState('')
+  const [searchText, setSearchText] = useState(initialKeyword ?? '')
   const [results, setResults] = useState<SearchPlace[] | null>(null)
-  const [isSearching, setIsSearching] = useState(false)
+  const [isSearching, setIsSearching] = useState(!!initialKeyword)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortRef = useRef(false)
 
@@ -25,6 +27,14 @@ export function useSearchViewModel() {
       if (!abortRef.current) setIsSearching(false)
     }
   }, [])
+
+  useEffect(() => {
+    if (initialKeyword && initialKeyword.length >= 2) {
+      addRecentSearch(initialKeyword)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      doSearch(initialKeyword)
+    }
+  }, [initialKeyword, doSearch])
 
   const onChangeSearchText = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,6 +59,7 @@ export function useSearchViewModel() {
   const goBack = () => router.back()
 
   const selectPlace = (place: SearchPlace) => {
+    if (searchText.trim().length >= 2) addRecentSearch(searchText.trim())
     router.push(`/map?lat=${place.latitude}&lng=${place.longitude}`)
   }
 

@@ -2,8 +2,9 @@
 
 import { useSearchViewModel } from '../viewmodel'
 
-export default function SearchView() {
-  const { searchText, results, isSearching, onChangeSearchText, goBack, selectPlace } = useSearchViewModel()
+export default function SearchView({ initialKeyword }: { initialKeyword?: string }) {
+  const { searchText, results, isSearching, onChangeSearchText, goBack, selectPlace } =
+    useSearchViewModel(initialKeyword)
 
   return (
     <div className="bg-bg-white flex min-h-dvh flex-col">
