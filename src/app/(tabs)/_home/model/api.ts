@@ -1,4 +1,4 @@
-import type { HeroBanner, PopularParking, QuickMenuItem, RecommendedRegion } from './types'
+import type { HeroBanner, PopularParking, QuickMenuItem, RecommendedRegion, TopParking } from './types'
 
 // NOTE: v1은 큐레이션 + 모킹 데이터. 향후 API endpoint 생성 시 이 파일만 교체.
 
@@ -8,37 +8,35 @@ const HERO_BANNERS: HeroBanner[] = [
     title: '제휴 주차장\n사전예약 OPEN',
     subtitle: '원하는 시간에 미리 예약하세요',
     background: 'linear-gradient(135deg, #0099FF 0%, #1A56DB 100%)',
-    decorEmoji: '🅿️'
+    image: '/images/banner_launch.webp'
   },
   {
     id: 'discount',
-    title: '오늘만\n주차권 30% 할인',
-    subtitle: '강남·홍대·잠실 핫플 주차장',
-    background: 'linear-gradient(135deg, #FF6F61 0%, #C2185B 100%)',
-    decorEmoji: '💸'
-  },
-  {
-    id: 'monthly',
-    title: '월정기 주차권\n첫 달 할인',
-    subtitle: '직장인을 위한 안심 정기권',
-    background: 'linear-gradient(135deg, #00C853 0%, #1B5E20 100%)',
-    decorEmoji: '📅'
+    title: '오늘만! 주차권 30% 할인',
+    subtitle: '강남 / 잠실 / 이태원 / 성수 핫플 주차장',
+    background: 'linear-gradient(135deg, #EBF4FF 0%, #DBEAFE 100%)',
+    image: '/images/banner_discount.webp'
   }
 ]
 
 const QUICK_MENU: QuickMenuItem[] = [
   // Row 1 — 핵심 플로우
-  { id: 'reserve', label: '사전예약', href: '/map', emoji: '🅿️', bgColor: '#FFE0B2' },
-  { id: 'trending', label: '인기 주차장', href: '/map', emoji: '📈', bgColor: '#FFCDD2', badge: 'HOT' },
-  { id: 'airport', label: '공항예약', href: '/map', emoji: '✈️', bgColor: '#BBDEFB' },
-  { id: 'monthly', label: '월정기', href: '/map', emoji: '📅', bgColor: '#C8E6C9' },
-  { id: 'shared', label: '공유주차', href: '/map', emoji: '🤝', bgColor: '#FFCCBC' },
-  // Row 2 — 사용 시나리오
-  { id: 'event', label: '행사장', href: '/map', emoji: '🎤', bgColor: '#FFE8D6' },
-  { id: 'department', label: '백화점', href: '/map', emoji: '🛍️', bgColor: '#FFCCE5' },
-  { id: 'lowest', label: '최저가', href: '/map', emoji: '💰', bgColor: '#E0F7FA' },
-  { id: 'new', label: '신규오픈', href: '/map', emoji: '✨', bgColor: '#FFCDD2', badge: 'N' },
-  { id: 'all-benefit', label: '혜택모아', href: '/map', emoji: '🎁', bgColor: '#FFAB91' }
+  { id: 'buy', label: '바로구매', href: '/map?buyable=1', icon: '/images/icn_buy.webp' },
+  { id: 'reserve', label: '사전예약', href: '/map', icon: '/images/icn_reserve.webp', badge: 'HOT' },
+  { id: 'airport', label: '공항주차', href: '/map', icon: '/images/icn_airport.webp' },
+  { id: 'monthly', label: '월정기', href: '/map', icon: '/images/icn_monthly.webp' },
+  { id: 'shared', label: '공유주차', action: 'coming_soon', icon: '/images/icn_shared.webp' },
+  // Row 2 — 부가 서비스
+  { id: 'carwash', label: '세차하기', action: 'coming_soon', icon: '/images/icn_carwash.webp' },
+  { id: 'favorite', label: '즐겨찾기', action: 'coming_soon', icon: '/images/icn_favorite.webp' },
+  { id: 'review', label: '후기남기기', action: 'review', icon: '/images/icn_review.webp' },
+  {
+    id: 'partner',
+    label: '제휴신청',
+    href: 'https://biz.modu.kr/valueup/form/brief?code=modunext',
+    icon: '/images/icn_partner.webp'
+  },
+  { id: 'together', label: '모여요', href: 'https://here.modu.kr', icon: '/images/icn_together.webp', badge: 'N' }
 ]
 
 const RECOMMENDED_REGIONS: RecommendedRegion[] = [
@@ -49,16 +47,17 @@ const RECOMMENDED_REGIONS: RecommendedRegion[] = [
     lng: 127.0276,
     gradient: 'linear-gradient(135deg, #FF8A65 0%, #FF5252 100%)',
     emoji: '🏙️',
+    image: '/images/region_gangnam.webp',
     badge: '인기'
   },
   {
-    id: 'hongdae',
-    name: '홍대·합정',
-    lat: 37.5563,
-    lng: 126.9226,
+    id: 'gwanghwamun',
+    name: '광화문·종로',
+    lat: 37.5759,
+    lng: 126.9769,
     gradient: 'linear-gradient(135deg, #7C4DFF 0%, #448AFF 100%)',
-    emoji: '🎨',
-    badge: '핫플'
+    emoji: '🏛️',
+    image: '/images/region_gwanghwamun.webp'
   },
   {
     id: 'jamsil',
@@ -67,15 +66,17 @@ const RECOMMENDED_REGIONS: RecommendedRegion[] = [
     lng: 127.1,
     gradient: 'linear-gradient(135deg, #FFB74D 0%, #FF7043 100%)',
     emoji: '🎢',
+    image: '/images/region_jamsil.webp',
     badge: '인기'
   },
   {
     id: 'myeongdong',
-    name: '명동·종로',
+    name: '명동·을지로',
     lat: 37.5634,
     lng: 126.9836,
     gradient: 'linear-gradient(135deg, #F06292 0%, #C2185B 100%)',
-    emoji: '🛍️'
+    emoji: '🛍️',
+    image: '/images/region_myeongdong.webp'
   },
   {
     id: 'itaewon',
@@ -84,6 +85,7 @@ const RECOMMENDED_REGIONS: RecommendedRegion[] = [
     lng: 126.9947,
     gradient: 'linear-gradient(135deg, #4DB6AC 0%, #00897B 100%)',
     emoji: '🌃',
+    image: '/images/region_itaewon.webp',
     badge: '핫플'
   },
   {
@@ -92,15 +94,17 @@ const RECOMMENDED_REGIONS: RecommendedRegion[] = [
     lat: 37.5219,
     lng: 126.9245,
     gradient: 'linear-gradient(135deg, #4FC3F7 0%, #1976D2 100%)',
-    emoji: '🏢'
+    emoji: '🏢',
+    image: '/images/region_yeouido.webp'
   },
   {
     id: 'seongsu',
-    name: '성수·뚝섬',
+    name: '성수',
     lat: 37.5447,
     lng: 127.0557,
     gradient: 'linear-gradient(135deg, #BA68C8 0%, #6A1B9A 100%)',
     emoji: '☕',
+    image: '/images/region_seongsu.webp',
     badge: '핫플'
   },
   {
@@ -110,6 +114,7 @@ const RECOMMENDED_REGIONS: RecommendedRegion[] = [
     lng: 127.0286,
     gradient: 'linear-gradient(135deg, #E57373 0%, #B71C1C 100%)',
     emoji: '💎',
+    image: '/images/region_apgujeong.webp',
     badge: '인기'
   }
 ]
@@ -117,52 +122,59 @@ const RECOMMENDED_REGIONS: RecommendedRegion[] = [
 const POPULAR_PARKINGS: PopularParking[] = [
   {
     seq: 60001,
-    name: '강남파이낸스센터',
-    shortLabel: '강남·역삼',
+    name: '청량리역 주차장',
+    shortLabel: '청량리역',
     gradient: 'linear-gradient(135deg, #FF8A65 0%, #FF5252 100%)',
-    emoji: '🏙️'
+    emoji: '🚉',
+    keyword: '청량리역'
   },
   {
     seq: 60002,
-    name: '잠실 롯데월드몰',
-    shortLabel: '잠실·송파',
-    gradient: 'linear-gradient(135deg, #FFB74D 0%, #FF7043 100%)',
-    emoji: '🎢'
+    name: '서울숲 주차장',
+    shortLabel: '서울숲',
+    gradient: 'linear-gradient(135deg, #66BB6A 0%, #2E7D32 100%)',
+    emoji: '🌳',
+    keyword: '서울숲'
   },
   {
     seq: 60003,
-    name: '홍대입구역 공영',
-    shortLabel: '홍대·합정',
-    gradient: 'linear-gradient(135deg, #7C4DFF 0%, #448AFF 100%)',
-    emoji: '🎨'
+    name: '그랑서울 주차장',
+    shortLabel: '그랑서울',
+    gradient: 'linear-gradient(135deg, #42A5F5 0%, #1565C0 100%)',
+    emoji: '🏢',
+    keyword: '그랑서울'
   },
   {
     seq: 60004,
-    name: '여의도 IFC몰',
-    shortLabel: '여의도',
-    gradient: 'linear-gradient(135deg, #4FC3F7 0%, #1976D2 100%)',
-    emoji: '🏢'
+    name: '수원역 주차장',
+    shortLabel: '수원역',
+    gradient: 'linear-gradient(135deg, #FFB74D 0%, #E65100 100%)',
+    emoji: '🚆',
+    keyword: '수원역'
   },
   {
     seq: 60005,
-    name: '명동 신세계',
-    shortLabel: '명동·종로',
-    gradient: 'linear-gradient(135deg, #F06292 0%, #C2185B 100%)',
-    emoji: '🛍️'
+    name: '광명역 주차장',
+    shortLabel: '광명역',
+    gradient: 'linear-gradient(135deg, #7C4DFF 0%, #311B92 100%)',
+    emoji: '🚄',
+    keyword: '광명역'
   },
   {
     seq: 60006,
-    name: '성수 디뮤지엄',
-    shortLabel: '성수·뚝섬',
-    gradient: 'linear-gradient(135deg, #BA68C8 0%, #6A1B9A 100%)',
-    emoji: '☕'
+    name: '을지트윈타워',
+    shortLabel: '을지로',
+    gradient: 'linear-gradient(135deg, #26C6DA 0%, #00838F 100%)',
+    emoji: '🏙️',
+    keyword: '을지트윈타워'
   },
   {
     seq: 60007,
-    name: '이태원 한남빌딩',
-    shortLabel: '이태원·한남',
-    gradient: 'linear-gradient(135deg, #4DB6AC 0%, #00897B 100%)',
-    emoji: '🌃'
+    name: '개화역 환승주차장',
+    shortLabel: '개화역',
+    gradient: 'linear-gradient(135deg, #EC407A 0%, #880E4F 100%)',
+    emoji: '🚌',
+    keyword: '개화역'
   }
 ]
 
@@ -180,4 +192,21 @@ export async function fetchRecommendedRegions(): Promise<RecommendedRegion[]> {
 
 export async function fetchPopularParkings(): Promise<PopularParking[]> {
   return POPULAR_PARKINGS
+}
+
+const TOP_PARKINGS: TopParking[] = [
+  { seq: 232253, name: '하이파킹 서울역', areaLabel: '서울역', image: '/images/parking_232253.webp' },
+  { seq: 203763, name: 'L7호텔 홍대', areaLabel: '홍대', image: '/images/parking_203763.webp' },
+  { seq: 204949, name: '홍대 와이즈파크', areaLabel: '홍대·합정', image: '/images/parking_204949.webp' },
+  { seq: 203879, name: '커피빈 뉴압구정점', areaLabel: '압구정', image: '/images/parking_203879.webp' },
+  { seq: 203629, name: '카카오T 싹아트센터', areaLabel: '강남', image: '/images/parking_203629.webp' },
+  { seq: 203642, name: '보라빌딩 신논현역', areaLabel: '신논현', image: '/images/parking_203642.webp' },
+  { seq: 204205, name: '아마노 신촌포스빌', areaLabel: '신촌', image: '/images/parking_204205.webp' },
+  { seq: 204218, name: '서울역사박물관', areaLabel: '광화문', image: '/images/parking_204218.webp' },
+  { seq: 203852, name: '하이파킹 하우스디비즈', areaLabel: '강남', image: '/images/parking_203852.webp' },
+  { seq: 206607, name: '삼성전자 서비스센터', areaLabel: '삼성동', image: '/images/parking_206607.webp' }
+]
+
+export async function fetchTopParkings(): Promise<TopParking[]> {
+  return TOP_PARKINGS
 }
