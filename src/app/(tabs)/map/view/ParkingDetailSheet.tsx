@@ -686,19 +686,47 @@ function Footer() {
         </button>
         <div className="flex flex-col gap-1.5 text-[12px] leading-[1.5] text-[#a3a3a3]">
           <p>(주) 쏘카</p>
-          <p>통신판매업 신고 : 제 2021-서울강남-04660호</p>
-          <p>사업자등록번호 : 258-87-01370</p>
-          <p>서비스 문의 : 1599-0110</p>
-          <p>주소 : 서울특별시 강남구 테헤란로 156, 강남파이낸스센터 23층</p>
+          <p>통신판매업 신고: 제 2019-제주오라-3호</p>
+          <p>사업자등록번호: 616-81-90529, 대표자: 박재욱</p>
+          <p>서비스 문의 번호: 1899-8242, Fax: 02-6969-9333</p>
+          <p>주소: 제주특별자치도 제주시 공항서로 141 (도두이동)</p>
         </div>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[#a3a3a3]">
-          <button className="underline-offset-2 hover:underline">이용약관</button>
+          <Link
+            href="https://app.modu.kr/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline-offset-2 hover:underline"
+          >
+            이용약관
+          </Link>
           <span>|</span>
-          <button className="underline-offset-2 hover:underline">개인정보처리방침</button>
+          <Link
+            href="https://app.modu.kr/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline-offset-2 hover:underline"
+          >
+            개인정보처리방침
+          </Link>
           <span>|</span>
-          <button className="underline-offset-2 hover:underline">위치정보 이용약관</button>
+          <Link
+            href="https://app.modu.kr/location"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline-offset-2 hover:underline"
+          >
+            위치정보 이용약관
+          </Link>
           <span>|</span>
-          <button className="underline-offset-2 hover:underline">고객센터</button>
+          <Link
+            href="https://help.modu.kr"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline-offset-2 hover:underline"
+          >
+            고객센터
+          </Link>
         </div>
       </div>
     </div>

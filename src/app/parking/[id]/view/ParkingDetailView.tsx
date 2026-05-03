@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 import { DETAIL_TABS, useParkingDetailViewModel } from '../viewmodel'
 import type { ParkingLotDetail, ParkingLotTimeContent } from '@/shared/types/parking'
@@ -21,7 +22,7 @@ export default function ParkingDetailView({ seq, initialDetail }: ParkingDetailV
     <div className="scrollbar-hide bg-bg-weak flex min-h-screen flex-col overflow-y-auto">
       {/* 헤더 */}
       <header className="bg-bg-white flex items-center gap-2 px-2 py-3">
-        <button onClick={() => router.back()} className="flex size-10 items-center justify-center">
+        <button onClick={() => router.back()} className="flex size-10 cursor-pointer items-center justify-center">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path
               d="M15 18L9 12L15 6"
@@ -52,7 +53,7 @@ export default function ParkingDetailView({ seq, initialDetail }: ParkingDetailV
               {detail?.basic.qty != null && <span>{detail.basic.qty.toLocaleString()}면</span>}
             </p>
           </div>
-          <button className="bg-primary text-static-white rounded-8 flex size-[53px] shrink-0 flex-col items-center justify-center gap-0.5">
+          <button className="bg-primary text-static-white rounded-8 flex size-[53px] shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path
                 d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
@@ -109,7 +110,7 @@ export default function ParkingDetailView({ seq, initialDetail }: ParkingDetailV
               <button
                 key={tab.key}
                 onClick={() => vm.setActiveTab(tab.key)}
-                className={`relative flex-1 py-3.5 text-[15px] font-semibold transition-colors ${
+                className={`relative flex-1 cursor-pointer py-3.5 text-[15px] font-semibold transition-colors ${
                   isActive ? 'text-text-strong' : 'text-text-disabled'
                 }`}
               >
@@ -142,7 +143,7 @@ export default function ParkingDetailView({ seq, initialDetail }: ParkingDetailV
       <div className="pointer-events-none fixed inset-x-0 bottom-6 flex justify-center">
         <button
           onClick={() => router.push('/map')}
-          className="bg-primary text-static-white shadow-02 pointer-events-auto flex h-11 items-center gap-1.5 rounded-full px-5 text-[14px] font-semibold"
+          className="bg-primary text-static-white shadow-02 pointer-events-auto flex h-11 cursor-pointer items-center gap-1.5 rounded-full px-5 text-[14px] font-semibold"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <path
@@ -157,6 +158,8 @@ export default function ParkingDetailView({ seq, initialDetail }: ParkingDetailV
   )
 }
 
+const TICKET_PREVIEW_COUNT = 5
+
 /* ─── TicketsSection ─── */
 function TicketsSection({
   tickets,
@@ -167,6 +170,10 @@ function TicketsSection({
   isLoading: boolean
   onBuy: (couponSeq: number) => void
 }) {
+  const [showAll, setShowAll] = useState(false)
+  const visibleTickets = showAll ? tickets : tickets.slice(0, TICKET_PREVIEW_COUNT)
+  const hasMore = tickets.length > TICKET_PREVIEW_COUNT
+
   return (
     <div className="bg-bg-white flex flex-col gap-6 p-6">
       <h2 className="text-text-strong text-[20px] font-semibold tracking-[-0.3px]">주차권</h2>
@@ -178,7 +185,7 @@ function TicketsSection({
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
-          {tickets.map((ticket) => {
+          {visibleTickets.map((ticket) => {
             const isDisabled = !ticket.isOpen || ticket.isSoldOut
             return (
               <div key={ticket.couponSeq} className="flex overflow-hidden rounded-lg">
@@ -213,7 +220,7 @@ function TicketsSection({
                     onClick={() => !isDisabled && onBuy(ticket.couponSeq)}
                     disabled={isDisabled}
                     className={`shrink-0 text-[14px] font-bold ${
-                      isDisabled ? 'text-text-disabled cursor-default' : 'text-text-strong'
+                      isDisabled ? 'text-text-disabled cursor-default' : 'text-text-strong cursor-pointer'
                     }`}
                   >
                     구매하기
@@ -224,6 +231,23 @@ function TicketsSection({
           })}
           {tickets.length === 0 && (
             <p className="text-text-soft py-6 text-center text-[14px]">판매 중인 주차권이 없습니다.</p>
+          )}
+          {hasMore && !showAll && (
+            <button
+              onClick={() => setShowAll(true)}
+              className="border-stroke-sub text-text-sub flex h-12 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border text-[14px] font-semibold"
+            >
+              전체보기
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M6 9l6 6 6-6"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
           )}
         </div>
       )}
@@ -277,7 +301,7 @@ function InfoSection({
         <div className="flex items-center justify-between">
           <span className="text-text-sub text-[16px]">주소</span>
           <button
-            className="flex items-center gap-1 text-right"
+            className="flex cursor-pointer items-center gap-1 text-right"
             onClick={() => onCopyAddress(basic.newAddress || basic.address)}
           >
             <span className="text-text-strong text-[16px]">{basic.newAddress || basic.address}</span>
@@ -289,7 +313,7 @@ function InfoSection({
         </div>
       </div>
 
-      <button className="border-stroke-sub text-text-sub flex h-[50px] w-full items-center justify-center rounded-md border text-[16px] font-semibold">
+      <button className="border-stroke-sub text-text-sub flex h-[50px] w-full cursor-pointer items-center justify-center rounded-md border text-[16px] font-semibold">
         로드뷰 보기
       </button>
 
@@ -422,7 +446,7 @@ function NearbySection({ detail }: { detail: ReturnType<typeof useParkingDetailV
       <div className="flex items-center justify-between">
         <span className="text-text-sub text-[14px]">위의 요약이 도움이 되었나요?</span>
         <div className="flex gap-2">
-          <button className="bg-primary/10 flex items-center rounded-full px-3.5 py-1.5">
+          <button className="bg-primary/10 flex cursor-pointer items-center rounded-full px-3.5 py-1.5">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#09F">
               <path
                 d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3M14 2l-1 7h7a2 2 0 011 1.9l-1.5 7A2 2 0 0117.5 19H7V9l5-7z"
@@ -431,7 +455,7 @@ function NearbySection({ detail }: { detail: ReturnType<typeof useParkingDetailV
               />
             </svg>
           </button>
-          <button className="flex items-center rounded-full bg-[#EBEBEB] px-3.5 py-1.5">
+          <button className="flex cursor-pointer items-center rounded-full bg-[#EBEBEB] px-3.5 py-1.5">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <path
                 d="M17 2h3a2 2 0 012 2v7a2 2 0 01-2 2h-3M10 22l1-7H4a2 2 0 01-1-1.9l1.5-7A2 2 0 016.5 5H17v10l-5 7z"
