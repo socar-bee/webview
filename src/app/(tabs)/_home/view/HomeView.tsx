@@ -447,6 +447,7 @@ function RegionsSection({
     <section className="bg-bg-white py-6">
       <div className="flex items-center justify-between px-5">
         <h2 className="text-text-strong flex items-center gap-1.5 text-[18px] font-bold tracking-[-0.3px]">
+          지역 <span className="text-primary">BEST</span>
           <img
             src="/images/icn_region_best.webp"
             alt=""
@@ -456,7 +457,6 @@ function RegionsSection({
             className="size-6 object-contain"
             draggable={false}
           />
-          지역 <span className="text-primary">BEST</span>
         </h2>
         <button
           onClick={onNearby}
@@ -532,6 +532,7 @@ function TopParkingsSection({
     <section className="bg-bg-white py-6">
       <div className="px-5">
         <h2 className="text-text-strong flex items-center gap-1.5 text-[18px] font-bold tracking-[-0.3px]">
+          주차장 <span className="text-primary">BEST</span>
           <img
             src="/images/icn_parking_best.webp"
             alt=""
@@ -541,7 +542,6 @@ function TopParkingsSection({
             className="size-6 object-contain"
             draggable={false}
           />
-          주차장 <span className="text-primary">BEST</span>
         </h2>
       </div>
       <div className="scrollbar-hide mt-4 overflow-x-auto">
@@ -714,6 +714,9 @@ function PopularKeywordsSection({
     <section className="bg-bg-white py-6">
       <div className="flex items-end justify-between px-5">
         <h2 className="text-text-strong flex items-center gap-1.5 text-[18px] font-bold tracking-[-0.3px]">
+          <span>
+            인기검색어 <span className="text-primary">BEST</span>
+          </span>
           <img
             src="/images/icn_hot.webp"
             alt=""
@@ -723,9 +726,6 @@ function PopularKeywordsSection({
             className="size-6 object-contain"
             draggable={false}
           />
-          <span>
-            인기검색어 <span className="text-primary">BEST</span>
-          </span>
         </h2>
         <span className="text-text-soft text-[11px]">이번 주</span>
       </div>
