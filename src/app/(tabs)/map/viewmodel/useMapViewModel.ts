@@ -8,6 +8,7 @@ import CurrentPositionMarker from '@/shared/components/map/CurrentPositionMarker
 import ParkingCluster from '@/shared/components/map/ParkingCluster'
 import PoiIcon from '@/shared/components/map/PoiIcon'
 import ShareCluster from '@/shared/components/map/ShareCluster'
+import { useFavorites } from '@/shared/hooks/useFavorites'
 
 import { createClustering, type ClusteringInstance } from '@/shared/lib/clustering'
 
@@ -78,6 +79,8 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
   )
   // 마커별 핀 fingerprint: key → fingerprint (데이터 변경 감지)
   const pinFingerprints = useRef<Record<string, string>>({})
+  // 즐겨찾기 seq Set — 마커 아이콘 fingerprint 분기에 사용. useFavorites 변경 시 동기화.
+  const favoriteSeqsRef = useRef<Set<number>>(new Set())
   const currentPositionMarkerRef = useRef<naver.maps.Marker | null>(null)
   const cachedTicketGroupMarkers = useRef<naver.maps.Marker[]>([])
   // 지도 초기화 전 moveToCurrentLocation 호출 시 보류: { showPin }
@@ -143,14 +146,22 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
     return size
   }, [])
 
+  /** 핀 fingerprint 생성 — 동일한 비주얼 → 같은 키 → 캐시 히트. isFavorite도 비주얼 분기이므로 포함. */
+  const buildIconKey = useCallback(
+    (pin: Pin, isOn: boolean, isFavorite: boolean) =>
+      `${pin.markerType}|${pin.label}|${pin.ticketName ?? ''}|${pin.ticketPrice ?? ''}|${isOn}|${isFavorite ? 'F' : ''}`,
+    []
+  )
+
   // renderToString + measureHtml 결과를 시각 fingerprint로 캐싱
   const getMarkerIcon = useCallback(
     (pin: Pin, isOn = false) => {
-      const key = `${pin.markerType}|${pin.label}|${pin.ticketName ?? ''}|${pin.ticketPrice ?? ''}|${isOn}`
+      const isFavorite = favoriteSeqsRef.current.has(pin.seq)
+      const key = buildIconKey(pin, isOn, isFavorite)
       const cached = markerIconCache.current.get(key)
       if (cached) return cached
 
-      const content = ReactDOMServer.renderToString(PoiIcon({ pin, isOn }))
+      const content = ReactDOMServer.renderToString(PoiIcon({ pin, isOn, isFavorite }))
       const { width, height } = measureHtml(content)
       const icon = {
         content,
@@ -160,8 +171,35 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
       markerIconCache.current.set(key, icon)
       return icon
     },
-    [measureHtml]
+    [measureHtml, buildIconKey]
   )
+
+  // 즐겨찾기 변경 → 영향 받는 마커만 아이콘 재발급
+  const { favorites: favoriteList } = useFavorites()
+  useEffect(() => {
+    const newSet = new Set(favoriteList.map((f) => f.seq))
+    const prev = favoriteSeqsRef.current
+    const changed = new Set<number>()
+    newSet.forEach((s) => {
+      if (!prev.has(s)) changed.add(s)
+    })
+    prev.forEach((s) => {
+      if (!newSet.has(s)) changed.add(s)
+    })
+    favoriteSeqsRef.current = newSet
+    if (changed.size === 0) return
+
+    Object.entries(cachedMarkers.current).forEach(([k, m]) => {
+      const seq = m.get('seq') as number | undefined
+      if (seq == null || !changed.has(seq)) return
+      const pin = cachedPinsBySeq.current[seq]
+      if (!pin) return
+      const isOn = seq === selectedSeqRef.current
+      const icon = getMarkerIcon(pin, isOn)
+      m.setIcon(icon)
+      pinFingerprints.current[k] = buildIconKey(pin, isOn, newSet.has(seq))
+    })
+  }, [favoriteList, getMarkerIcon, buildIconKey])
 
   const generateMarker = useCallback(
     (pin: Pin, isOn = false) => {
@@ -191,12 +229,12 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
           const prevPin = cachedPinsBySeq.current[prevSeq]
           if (prevPin) {
             const prevIcon = getMarkerIcon(prevPin, false)
+            const prevFp = buildIconKey(prevPin, false, favoriteSeqsRef.current.has(prevPin.seq))
             Object.entries(cachedMarkers.current).forEach(([k, m]) => {
               if (m.get('seq') === prevSeq) {
                 m.setIcon(prevIcon)
                 m.setZIndex(prevPin.zIndex)
-                pinFingerprints.current[k] =
-                  `${prevPin.markerType}|${prevPin.label}|${prevPin.ticketName ?? ''}|${prevPin.ticketPrice ?? ''}|false`
+                pinFingerprints.current[k] = prevFp
               }
             })
           }
@@ -204,12 +242,12 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
 
         // 새 마커 활성화
         const onIcon = getMarkerIcon(pin, true)
+        const onFp = buildIconKey(pin, true, favoriteSeqsRef.current.has(pin.seq))
         Object.entries(cachedMarkers.current).forEach(([k, m]) => {
           if (m.get('seq') === seq) {
             m.setIcon(onIcon)
             bringToFront(m, 200)
-            pinFingerprints.current[k] =
-              `${pin.markerType}|${pin.label}|${pin.ticketName ?? ''}|${pin.ticketPrice ?? ''}|true`
+            pinFingerprints.current[k] = onFp
           }
         })
         selectedSeqRef.current = seq
@@ -219,7 +257,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
 
       return marker
     },
-    [getMarkerIcon, bringToFront]
+    [getMarkerIcon, bringToFront, buildIconKey]
   )
 
   // ─── Cluster Icon ───
@@ -398,7 +436,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
     const prevPin = cachedPinsBySeq.current[prevSeq]
     if (prevPin) {
       const icon = getMarkerIcon(prevPin, false)
-      const prevKey = `${prevPin.markerType}|${prevPin.label}|${prevPin.ticketName ?? ''}|${prevPin.ticketPrice ?? ''}|false`
+      const prevKey = buildIconKey(prevPin, false, favoriteSeqsRef.current.has(prevPin.seq))
       Object.entries(cachedMarkers.current).forEach(([key, m]) => {
         if (m.get('seq') === prevSeq) {
           m.setIcon(icon)
@@ -408,7 +446,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
       })
     }
     selectedSeqRef.current = null
-  }, [getMarkerIcon])
+  }, [getMarkerIcon, buildIconKey])
 
   /**
    * URL 직접 진입 등 외부에서 핀 선택 상태를 주입할 때 사용.
@@ -425,12 +463,12 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
         const prevPin = cachedPinsBySeq.current[prevSeq]
         if (prevPin) {
           const icon = getMarkerIcon(prevPin, false)
+          const fp = buildIconKey(prevPin, false, favoriteSeqsRef.current.has(prevPin.seq))
           Object.entries(cachedMarkers.current).forEach(([k, m]) => {
             if (m.get('seq') === prevSeq) {
               m.setIcon(icon)
               m.setZIndex(prevPin.zIndex)
-              pinFingerprints.current[k] =
-                `${prevPin.markerType}|${prevPin.label}|${prevPin.ticketName ?? ''}|${prevPin.ticketPrice ?? ''}|false`
+              pinFingerprints.current[k] = fp
             }
           })
         }
@@ -442,17 +480,17 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
       const pin = cachedPinsBySeq.current[seq]
       if (pin) {
         const icon = getMarkerIcon(pin, true)
+        const fp = buildIconKey(pin, true, favoriteSeqsRef.current.has(pin.seq))
         Object.entries(cachedMarkers.current).forEach(([k, m]) => {
           if (m.get('seq') === seq) {
             m.setIcon(icon)
             bringToFront(m, 200)
-            pinFingerprints.current[k] =
-              `${pin.markerType}|${pin.label}|${pin.ticketName ?? ''}|${pin.ticketPrice ?? ''}|true`
+            pinFingerprints.current[k] = fp
           }
         })
       }
     },
-    [getMarkerIcon, bringToFront]
+    [getMarkerIcon, bringToFront, buildIconKey]
   )
 
   /** 지도 중심을 지정 좌표로 이동 */
@@ -517,7 +555,8 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
 
           const key = `${group.geohash}/${pin.seq}`
           const isOn = pin.seq === selectedSeqRef.current
-          const fingerprint = `${pin.markerType}|${pin.label}|${pin.ticketName ?? ''}|${pin.ticketPrice ?? ''}|${isOn}`
+          const isFav = favoriteSeqsRef.current.has(pin.seq)
+          const fingerprint = buildIconKey(pin, isOn, isFav)
 
           // 데이터가 바뀌지 않은 마커 → visibility만 갱신, 재생성 건너뜀
           if (cachedMarkers.current[key] && pinFingerprints.current[key] === fingerprint) {
@@ -548,7 +587,7 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
         })
       }
     },
-    [generateMarker, handleMarkerOverlay, bringToFront]
+    [generateMarker, handleMarkerOverlay, bringToFront, buildIconKey]
   )
 
   // pinsGroups / ticketGroupPins 변경 시 마커 그리기

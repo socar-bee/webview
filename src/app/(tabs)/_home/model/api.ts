@@ -1,4 +1,4 @@
-import type { HeroBanner, PopularParking, QuickMenuItem, RecommendedRegion, TopParking } from './types'
+import type { HeroBanner, PopularKeyword, PopularParking, QuickMenuItem, RecommendedRegion, TopParking } from './types'
 
 // NOTE: v1은 큐레이션 + 모킹 데이터. 향후 API endpoint 생성 시 이 파일만 교체.
 
@@ -23,12 +23,12 @@ const QUICK_MENU: QuickMenuItem[] = [
   // Row 1 — 핵심 플로우
   { id: 'buy', label: '바로구매', href: '/map?buyable=1', icon: '/images/icn_buy.webp' },
   { id: 'reserve', label: '사전예약', href: '/map', icon: '/images/icn_reserve.webp', badge: 'HOT' },
-  { id: 'airport', label: '공항주차', href: '/map', icon: '/images/icn_airport.webp' },
-  { id: 'monthly', label: '월정기', href: '/map', icon: '/images/icn_monthly.webp' },
+  { id: 'airport', label: '공항주차', action: 'coming_soon', icon: '/images/icn_airport.webp' },
+  { id: 'monthly', label: '월정기', action: 'coming_soon', icon: '/images/icn_monthly.webp' },
   { id: 'shared', label: '공유주차', action: 'coming_soon', icon: '/images/icn_shared.webp' },
   // Row 2 — 부가 서비스
   { id: 'carwash', label: '세차하기', action: 'coming_soon', icon: '/images/icn_carwash.webp' },
-  { id: 'favorite', label: '즐겨찾기', action: 'coming_soon', icon: '/images/icn_favorite.webp' },
+  { id: 'favorite', label: '즐겨찾기', href: '/favorites', icon: '/images/icn_favorite.webp' },
   { id: 'review', label: '후기남기기', action: 'review', icon: '/images/icn_review.webp' },
   {
     id: 'partner',
@@ -209,4 +209,21 @@ const TOP_PARKINGS: TopParking[] = [
 
 export async function fetchTopParkings(): Promise<TopParking[]> {
   return TOP_PARKINGS
+}
+
+const POPULAR_KEYWORDS: PopularKeyword[] = [
+  { rank: 1, keyword: '성수역 2호선', searchCount: 7049, wowDelta: 12.7 },
+  { rank: 2, keyword: '코엑스', searchCount: 5943, wowDelta: 9.6 },
+  { rank: 3, keyword: '고척스카이돔', searchCount: 5601, wowDelta: -13.9 },
+  { rank: 4, keyword: '서울숲', searchCount: 5397, wowDelta: 196.1 },
+  { rank: 5, keyword: '홍대입구역 2호선', searchCount: 4967, wowDelta: -4.6 },
+  { rank: 6, keyword: '광명역 (고속철도)', searchCount: 4568, wowDelta: 25.9 },
+  { rank: 7, keyword: '강남역 2호선', searchCount: 4122, wowDelta: -9.3 },
+  { rank: 8, keyword: '혜화역 4호선', searchCount: 3446, wowDelta: 11.3 },
+  { rank: 9, keyword: '서울역 (고속철도)', searchCount: 2767, wowDelta: 2.2 },
+  { rank: 10, keyword: '광화문', searchCount: 2520, wowDelta: 53.4 }
+]
+
+export async function fetchPopularKeywords(): Promise<PopularKeyword[]> {
+  return POPULAR_KEYWORDS
 }

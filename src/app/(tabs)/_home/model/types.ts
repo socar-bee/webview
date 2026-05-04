@@ -68,3 +68,13 @@ export interface PopularParking {
   /** /search/[keyword] 로 이동할 검색어 */
   keyword: string
 }
+
+/** 인기 검색어 — 주간 Top 랭킹 + WoW 변동률. */
+export interface PopularKeyword {
+  rank: number
+  keyword: string
+  /** 주간 탐색 주차장 수 (사이드 정보, 표출 옵션) */
+  searchCount: number
+  /** WoW 변동률 (% 단위, +상승 / -하락 / 0 보합) */
+  wowDelta: number
+}

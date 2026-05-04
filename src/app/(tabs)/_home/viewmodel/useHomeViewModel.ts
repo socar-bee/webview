@@ -3,9 +3,16 @@
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import type { PopularParking, RecommendedRegion, TopParking } from '../model'
+import type { PopularKeyword, PopularParking, RecommendedRegion, TopParking } from '../model'
 
-import { useHeroBanners, usePopularParkings, useQuickMenu, useRecommendedRegions, useTopParkings } from '../model'
+import {
+  useHeroBanners,
+  usePopularKeywords,
+  usePopularParkings,
+  useQuickMenu,
+  useRecommendedRegions,
+  useTopParkings
+} from '../model'
 
 const HERO_AUTOPLAY_MS = 4500
 const HERO_RESUME_DELAY_MS = 3000
@@ -31,6 +38,7 @@ export function useHomeViewModel() {
   const { data: regions = [], isLoading: isRegionsLoading } = useRecommendedRegions()
   const { data: parkings = [], isLoading: isParkingsLoading } = usePopularParkings()
   const { data: topParkings = [], isLoading: isTopParkingsLoading } = useTopParkings()
+  const { data: popularKeywords = [], isLoading: isPopularKeywordsLoading } = usePopularKeywords()
 
   const [heroIndex, setHeroIndex] = useState(0)
   const isPausedRef = useRef(false)
@@ -84,21 +92,17 @@ export function useHomeViewModel() {
     if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current)
   }, [])
 
-  // 드래그 종료 → 인덱스 변경 + 3초 후 자동재생 재개
-  const onHeroDragEnd = useCallback(
-    (offset: number, velocity: number) => {
-      if (offset < -50 || velocity < -500) {
-        setHeroIndex((i) => Math.min(i + 1, banners.length - 1))
-      } else if (offset > 50 || velocity > 500) {
-        setHeroIndex((i) => Math.max(i - 1, 0))
-      }
-      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current)
-      resumeTimerRef.current = setTimeout(() => {
-        isPausedRef.current = false
-      }, HERO_RESUME_DELAY_MS)
-    },
-    [banners.length]
-  )
+  // 드래그 종료 → 3초 후 자동재생 재개 (index 결정은 컴포넌트에서)
+  const onHeroDragEnd = useCallback(() => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current)
+    resumeTimerRef.current = setTimeout(() => {
+      isPausedRef.current = false
+    }, HERO_RESUME_DELAY_MS)
+  }, [])
+
+  const onHeroIndexChange = useCallback((next: number) => {
+    setHeroIndex(next)
+  }, [])
 
   const goToRegion = useCallback(
     (region: RecommendedRegion) => {
@@ -121,6 +125,13 @@ export function useHomeViewModel() {
     [router]
   )
 
+  const goToKeyword = useCallback(
+    (keyword: PopularKeyword) => {
+      router.push(`/search/${encodeURIComponent(keyword.keyword)}`)
+    },
+    [router]
+  )
+
   const goNearby = useCallback(() => {
     router.push('/map')
   }, [router])
@@ -130,19 +141,23 @@ export function useHomeViewModel() {
     heroIndex,
     onHeroDragStart,
     onHeroDragEnd,
+    onHeroIndexChange,
     quickMenu,
     regions,
     parkings,
     topParkings,
+    popularKeywords,
     isRegionsLoading,
     isParkingsLoading,
     isTopParkingsLoading,
+    isPopularKeywordsLoading,
     locationLabel,
     isLocating,
     detectLocation,
     goToRegion,
     goToParking,
     goToTopParking,
+    goToKeyword,
     goNearby
   }
 }

@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 
-import type { HeroBanner, PopularParking, QuickMenuItem, RecommendedRegion, TopParking } from './types'
+import type { HeroBanner, PopularKeyword, PopularParking, QuickMenuItem, RecommendedRegion, TopParking } from './types'
 
 import {
   fetchHeroBanners,
+  fetchPopularKeywords,
   fetchPopularParkings,
   fetchQuickMenu,
   fetchRecommendedRegions,
@@ -16,6 +17,7 @@ export const homeQueryKeys = {
   quickMenu: () => [...homeQueryKeys.all, 'quickMenu'] as const,
   recommendedRegions: () => [...homeQueryKeys.all, 'recommendedRegions'] as const,
   popularParkings: () => [...homeQueryKeys.all, 'popularParkings'] as const,
+  popularKeywords: () => [...homeQueryKeys.all, 'popularKeywords'] as const,
   topParkings: () => [...homeQueryKeys.all, 'topParkings'] as const
 }
 
@@ -56,5 +58,13 @@ export function useTopParkings() {
     queryKey: homeQueryKeys.topParkings(),
     queryFn: fetchTopParkings,
     staleTime: Infinity
+  })
+}
+
+export function usePopularKeywords() {
+  return useQuery<PopularKeyword[]>({
+    queryKey: homeQueryKeys.popularKeywords(),
+    queryFn: fetchPopularKeywords,
+    staleTime: 60_000
   })
 }

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import AnimationSheet, { type SheetSnap } from '@/shared/components/ui/AnimationSheet'
+import { useFavorites } from '@/shared/hooks/useFavorites'
 
 import type { RecommendParking } from '@/app/parking/[id]/viewmodel'
 
@@ -52,6 +53,8 @@ export default function ParkingDetailSheet({
   const isScrollingByClickRef = useRef(false)
 
   const [activeSection, setActiveSection] = useState<DetailTabKey>('tickets')
+  // PeekBar(in-body)가 스크롤되어 사라진 후에만 NavigationBar에 주차장명 표출
+  const [showNavTitle, setShowNavTitle] = useState(false)
 
   const sectionRefs = useMemo<Record<DetailTabKey, React.RefObject<HTMLDivElement | null>>>(
     () => ({
@@ -139,6 +142,31 @@ export default function ParkingDetailSheet({
     setActiveSection('tickets')
   }, [data?.seq, getScrollContainer])
 
+  // 시트가 닫히거나 full 이외의 snap이면 NavigationBar 타이틀 숨김 + 스크롤 초기화
+  // (재오픈 시 stale scroll로 NavBar 타이틀이 노출되는 문제 방지)
+  useEffect(() => {
+    if (!isOpen || snap !== 'full') {
+      setShowNavTitle(false)
+      const container = getScrollContainer()
+      if (container) container.scrollTop = 0
+      return
+    }
+  }, [isOpen, snap, getScrollContainer])
+
+  // full 상태에서 스크롤 위치에 따라 NavigationBar 타이틀 토글
+  useEffect(() => {
+    if (!isOpen || snap !== 'full') return
+    const container = getScrollContainer()
+    if (!container) return
+
+    // PeekBar(in-body) 높이만큼 스크롤되면 NavigationBar에 타이틀 노출
+    const TITLE_REVEAL_THRESHOLD = 64
+    const update = () => setShowNavTitle(container.scrollTop > TITLE_REVEAL_THRESHOLD)
+    update()
+    container.addEventListener('scroll', update, { passive: true })
+    return () => container.removeEventListener('scroll', update)
+  }, [isOpen, snap, getScrollContainer])
+
   const lat = vm.detail?.basic.latitude
   const lng = vm.detail?.basic.longitude
   useEffect(() => {
@@ -147,12 +175,25 @@ export default function ParkingDetailSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng])
 
+  const { favorites, toggle: toggleFavorite } = useFavorites()
+
   if (!data) return null
 
   const detail = vm.detail
   const capacity = detail?.basic.qty
   const typeLabel = detail?.basic.partnerStatus ? '제휴' : '공영'
   const displayName = detail?.basic.name ?? data.name
+
+  const isFavorited = favorites.some((f) => f.seq === data.seq)
+  const handleToggleFavorite = () => {
+    toggleFavorite({
+      seq: data.seq,
+      name: displayName,
+      areaLabel: detail?.basic.newAddress || detail?.basic.address,
+      image: detail?.basic.photos?.[0]?.file_name,
+      isPartner: data.isPartner ?? !!detail?.basic.partnerStatus
+    })
+  }
 
   return (
     <AnimationSheet
@@ -162,7 +203,7 @@ export default function ParkingDetailSheet({
       onClose={onClose}
       peekHeight={96}
       halfRatio={0.45}
-      navigationBar={<NavigationBar title={displayName} onBack={onClose} />}
+      navigationBar={<NavigationBar title={displayName} showTitle={showNavTitle} onBack={onClose} />}
       peek={
         // full 상태에서는 body 안 상단에 PeekBar를 배치해 스크롤과 함께 사라지게 함 (Tab bar가 NavBar 바로 아래로 sticky).
         // peek/half 에서는 드래그 핸들 영역에 고정 노출.
@@ -171,6 +212,8 @@ export default function ParkingDetailSheet({
             name={displayName}
             typeLabel={detail ? typeLabel : data.isPartner ? '제휴' : null}
             capacity={capacity ?? null}
+            isFavorited={isFavorited}
+            onToggleFavorite={handleToggleFavorite}
           />
         ) : null
       }
@@ -193,6 +236,8 @@ export default function ParkingDetailSheet({
             name={displayName}
             typeLabel={detail ? typeLabel : data.isPartner ? '제휴' : null}
             capacity={capacity ?? null}
+            isFavorited={isFavorited}
+            onToggleFavorite={handleToggleFavorite}
           />
         )}
 
@@ -283,27 +328,46 @@ export default function ParkingDetailSheet({
 }
 
 /* ─── NavigationBar ─── */
-function NavigationBar({ title, onBack }: { title: string; onBack: () => void }) {
+function NavigationBar({ title, showTitle, onBack }: { title: string; showTitle: boolean; onBack: () => void }) {
   return (
     <div className="flex h-12 items-center justify-between px-2">
-      <button onClick={onBack} className="flex size-10 items-center justify-center">
+      <button onClick={onBack} className="flex size-10 cursor-pointer items-center justify-center">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <path d="M15 18L9 12L15 6" stroke="#171717" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
-      <h2 className="text-text-strong text-[16px] font-bold">{title}</h2>
+      <h2
+        className={`text-text-strong truncate px-2 text-[16px] font-bold transition-opacity duration-200 ${
+          showTitle ? 'opacity-100' : 'opacity-0'
+        }`}
+        aria-hidden={!showTitle}
+      >
+        {title}
+      </h2>
       <div className="size-10" />
     </div>
   )
 }
 
 /* ─── PeekBar ─── */
-function PeekBar({ name, typeLabel, capacity }: { name: string; typeLabel: string | null; capacity: number | null }) {
+function PeekBar({
+  name,
+  typeLabel,
+  capacity,
+  isFavorited,
+  onToggleFavorite
+}: {
+  name: string
+  typeLabel: string | null
+  capacity: number | null
+  isFavorited: boolean
+  onToggleFavorite: () => void
+}) {
   return (
     <div className="flex items-center justify-between gap-3 px-5 pt-2 pb-5">
       <div className="min-w-0 flex-1">
         <h3 className="text-text-strong truncate text-[18px] leading-[1.4] font-bold">{name}</h3>
-        <p className="text-text-sub mt-0.5 flex items-center gap-1.5 text-[14px]">
+        <div className="text-text-sub mt-0.5 flex items-center gap-1.5 text-[14px]">
           {typeLabel && <span>{typeLabel}</span>}
           {typeLabel && capacity !== null && (
             <svg width="4" height="4" viewBox="0 0 4 4" fill="none">
@@ -311,11 +375,33 @@ function PeekBar({ name, typeLabel, capacity }: { name: string; typeLabel: strin
             </svg>
           )}
           {capacity !== null && <span>{capacity.toLocaleString()}면</span>}
-        </p>
+          {(typeLabel || capacity !== null) && <span className="text-stroke-sub">|</span>}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleFavorite()
+            }}
+            aria-label={isFavorited ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+            aria-pressed={isFavorited}
+            className="flex shrink-0 cursor-pointer items-center transition-transform active:scale-90"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/icn_favorite.webp"
+              alt=""
+              width={20}
+              height={20}
+              draggable={false}
+              className={`size-5 object-contain transition-[filter,opacity] ${
+                isFavorited ? '' : 'opacity-50 grayscale'
+              }`}
+            />
+          </button>
+        </div>
       </div>
       <button
         onClick={(e) => e.stopPropagation()}
-        className="bg-primary text-static-white flex size-[53px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-[8px]"
+        className="bg-primary text-static-white flex size-[53px] shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-[8px]"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
           <path
@@ -553,8 +639,8 @@ function InfoSection({
         <span className="text-text-sub text-[16px] font-semibold">{title}</span>
       </div>
       <div className="flex flex-col gap-2">
-        {contents.map((item) => (
-          <div key={item.key} className="flex items-center justify-between">
+        {contents.map((item, idx) => (
+          <div key={`${item.key}-${idx}`} className="flex items-center justify-between">
             <span className="text-text-sub text-[14px]">{item.key}</span>
             <span className="text-text-strong text-[14px]">{item.value}</span>
           </div>

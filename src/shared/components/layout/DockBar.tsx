@@ -67,7 +67,7 @@ export default function DockBar() {
   return (
     <nav
       ref={navRef}
-      className="border-stroke-soft bg-bg-white relative z-[var(--z-dock)] shrink-0 border-t pb-[env(safe-area-inset-bottom)]"
+      className="border-stroke-soft bg-bg-white relative z-[var(--z-dock)] mx-auto w-full max-w-[480px] shrink-0 border-t pb-[env(safe-area-inset-bottom)]"
     >
       <div className="flex items-center justify-around py-2.5">
         {NAV_ITEMS.map((item) => {

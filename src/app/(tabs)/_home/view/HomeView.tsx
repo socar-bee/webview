@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Toast from '@/shared/components/ui/Toast'
 import { useRecentSearches } from '@/shared/hooks/useRecentSearches'
 
-import type { HeroBanner, PopularParking, QuickMenuItem, RecommendedRegion, TopParking } from '../model'
+import type { HeroBanner, PopularKeyword, QuickMenuItem, RecommendedRegion, TopParking } from '../model'
 
 import { useHomeViewModel } from '../viewmodel'
 
@@ -22,12 +22,15 @@ export default function HomeView() {
   }, [])
 
   return (
-    <div className="bg-bg-white flex min-h-full flex-col overflow-x-hidden">
-      <TopBar />
-      <LocationChip label={vm.locationLabel} isLocating={vm.isLocating} onClick={vm.detectLocation} />
+    <div className="bg-bg-white flex min-h-full flex-col overflow-x-clip">
+      <div className="bg-bg-white sticky top-0 z-20">
+        <TopBar />
+        <LocationChip label={vm.locationLabel} isLocating={vm.isLocating} onClick={vm.detectLocation} />
+      </div>
       <HeroCarousel
         banners={vm.banners}
         index={vm.heroIndex}
+        onIndexChange={vm.onHeroIndexChange}
         onDragStart={vm.onHeroDragStart}
         onDragEnd={vm.onHeroDragEnd}
       />
@@ -48,13 +51,17 @@ export default function HomeView() {
         onNearby={vm.goNearby}
       />
       <div className="bg-bg-weak h-2.5" />
+      <PopularKeywordsSection
+        keywords={vm.popularKeywords}
+        isLoading={vm.isPopularKeywordsLoading}
+        onClickKeyword={vm.goToKeyword}
+      />
+      <div className="bg-bg-weak h-2.5" />
       <TopParkingsSection
         parkings={vm.topParkings}
         isLoading={vm.isTopParkingsLoading}
         onClickParking={vm.goToTopParking}
       />
-      <div className="bg-bg-weak h-2.5" />
-      <BestParkingsSection parkings={vm.parkings} isLoading={vm.isParkingsLoading} onClickParking={vm.goToParking} />
       <HomeFooter />
     </div>
   )
@@ -73,7 +80,7 @@ function TopBar() {
 
   return (
     <>
-      <header className="bg-bg-white sticky top-0 z-20">
+      <header className="bg-bg-white">
         <div className="flex items-center gap-2.5 px-4 pt-3 pb-2">
           <Link href="/" aria-label="홈" className="flex size-9 shrink-0 items-center justify-center">
             <img src="/images/icn_modu.svg" alt="모두의주차장" width={28} height={28} />
@@ -158,7 +165,8 @@ function RecentSearchSheet({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-40 bg-black/50"
+        className="fixed inset-x-0 top-0 z-40 mx-auto w-full max-w-[480px] bg-black/50"
+        style={{ bottom: 'var(--dock-height, 0px)' }}
         onClick={onClose}
       />
       <motion.div
@@ -166,8 +174,8 @@ function RecentSearchSheet({
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-        className="fixed bottom-0 left-1/2 z-50 min-h-[320px] w-full max-w-[480px] -translate-x-1/2 rounded-t-3xl bg-white"
-        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}
+        className="fixed left-1/2 z-50 min-h-[320px] w-full max-w-[480px] -translate-x-1/2 rounded-t-3xl bg-white pb-8 shadow-[0_-8px_24px_rgba(0,0,0,0.12)]"
+        style={{ bottom: 'var(--dock-height, 0px)' }}
       >
         <div className="flex justify-center pt-3 pb-1">
           <span className="bg-stroke-sub h-1 w-10 rounded-full" />
@@ -229,16 +237,22 @@ function LocationChip({ label, isLocating, onClick }: { label: string; isLocatin
 }
 
 /* ─── Hero Carousel ─── */
+const SWIPE_VELOCITY_THRESHOLD = 500
+const SWIPE_OFFSET_RATIO = 0.2 // 컨테이너 너비의 20% 이상 끌어야 슬라이드 전환
+const SLIDE_SPRING = { type: 'spring' as const, stiffness: 300, damping: 35, mass: 0.8 }
+
 function HeroCarousel({
   banners,
   index,
+  onIndexChange,
   onDragStart,
   onDragEnd
 }: {
   banners: HeroBanner[]
   index: number
+  onIndexChange: (next: number) => void
   onDragStart: () => void
-  onDragEnd: (offset: number, velocity: number) => void
+  onDragEnd: () => void
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
@@ -254,10 +268,37 @@ function HeroCarousel({
     return () => ro.disconnect()
   }, [])
 
-  // autoplay 또는 외부 index 변경 시 animate
+  // 외부 index 변경(autoplay 포함) 시 슬라이드 위치로 animate
   useEffect(() => {
-    animate(x, -index * containerWidth, { type: 'spring', stiffness: 300, damping: 35, mass: 0.8 })
+    if (!containerWidth) return
+    animate(x, -index * containerWidth, SLIDE_SPRING)
   }, [index, x, containerWidth])
+
+  const handleDragEnd = useCallback(
+    (_e: unknown, info: { offset: { x: number }; velocity: { x: number } }) => {
+      onDragEnd()
+      const offset = info.offset.x
+      const velocity = info.velocity.x
+      const swipeThreshold = Math.max(containerWidth * SWIPE_OFFSET_RATIO, 60)
+
+      let next = index
+      if (offset < -swipeThreshold || velocity < -SWIPE_VELOCITY_THRESHOLD) {
+        next = Math.min(index + 1, banners.length - 1)
+      } else if (offset > swipeThreshold || velocity > SWIPE_VELOCITY_THRESHOLD) {
+        next = Math.max(index - 1, 0)
+      }
+
+      if (next !== index) {
+        onIndexChange(next)
+        // useEffect가 next 위치로 animate. 즉시 animate도 호출해 시각적 지연 제거.
+        animate(x, -next * containerWidth, SLIDE_SPRING)
+      } else {
+        // index 미변경 → 현재 슬라이드 위치로 명시적 스냅 (모멘텀 어중간한 위치 방지)
+        animate(x, -index * containerWidth, SLIDE_SPRING)
+      }
+    },
+    [banners.length, containerWidth, index, onDragEnd, onIndexChange, x]
+  )
 
   if (!banners.length) {
     return (
@@ -269,15 +310,16 @@ function HeroCarousel({
 
   return (
     <div className="relative px-5">
-      <div ref={containerRef} className="overflow-hidden rounded-2xl">
+      <div ref={containerRef} className="touch-pan-y overflow-hidden rounded-2xl">
         <motion.div
           className="flex"
           style={{ x }}
-          drag="x"
+          drag={banners.length > 1 ? 'x' : false}
           dragConstraints={{ left: -(banners.length - 1) * containerWidth, right: 0 }}
           dragElastic={0.12}
+          dragMomentum={false}
           onDragStart={onDragStart}
-          onDragEnd={(_, info) => onDragEnd(info.offset.x, info.velocity.x)}
+          onDragEnd={handleDragEnd}
         >
           {banners.map((b) => (
             <div key={b.id} className="w-full shrink-0" style={{ width: containerWidth || '100%' }}>
@@ -352,8 +394,8 @@ function QuickMenuGrid({ items, onAction }: { items: QuickMenuItem[]; onAction?:
 
   if (!items.length) {
     return (
-      <section className="grid grid-cols-5 gap-y-5 px-5 py-6">
-        {Array.from({ length: 20 }).map((_, i) => (
+      <section className="grid grid-cols-5 gap-y-5 px-3 py-6">
+        {Array.from({ length: 10 }).map((_, i) => (
           <div key={i} className="flex flex-col items-center gap-1.5">
             <div className="bg-bg-soft size-12 animate-pulse rounded-2xl" />
             <div className="bg-bg-soft h-3 w-12 animate-pulse rounded" />
@@ -418,15 +460,17 @@ function RegionsSection({
         </button>
       </div>
 
-      <div className="scrollbar-hide mt-4 grid grid-flow-col grid-rows-2 gap-x-3 gap-y-4 overflow-x-auto px-5">
+      <div className="mt-4 grid grid-cols-4 gap-x-3 gap-y-4 px-5">
         {isLoading
           ? Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex w-[88px] shrink-0 flex-col items-center gap-2">
-                <div className="bg-bg-soft size-[88px] animate-pulse rounded-2xl" />
+              <div key={i} className="flex flex-col items-center gap-2">
+                <div className="bg-bg-soft aspect-square w-full animate-pulse rounded-2xl" />
                 <div className="bg-bg-soft h-3 w-14 animate-pulse rounded" />
               </div>
             ))
-          : regions.map((r, i) => <RegionCard key={r.id} region={r} index={i} onClick={() => onClickRegion(r)} />)}
+          : regions
+              .slice(0, 8)
+              .map((r, i) => <RegionCard key={r.id} region={r} index={i} onClick={() => onClickRegion(r)} />)}
       </div>
     </section>
   )
@@ -439,10 +483,10 @@ function RegionCard({ region, index, onClick }: { region: RecommendedRegion; ind
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03, duration: 0.25, ease: 'easeOut' }}
-      className="flex w-[88px] shrink-0 cursor-pointer flex-col items-center gap-2 text-left"
+      className="flex w-full cursor-pointer flex-col items-center gap-2 text-left"
     >
       <div
-        className="relative flex size-[88px] items-end justify-end overflow-hidden rounded-2xl p-2"
+        className="relative flex aspect-square w-full items-end justify-end overflow-hidden rounded-2xl p-2"
         style={
           region.image
             ? { backgroundImage: `url(${region.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -483,7 +527,7 @@ function TopParkingsSection({
         </h2>
       </div>
       <div className="scrollbar-hide mt-4 overflow-x-auto">
-        <div className="flex gap-3 px-5" style={{ width: 'max-content' }}>
+        <div className="flex w-max gap-3 px-5">
           {isLoading
             ? Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex w-[120px] shrink-0 flex-col gap-2">
@@ -517,7 +561,6 @@ function TopParkingsSection({
                   <span className="text-text-sub -mt-0.5 text-[11px] leading-none">{p.areaLabel}</span>
                 </motion.button>
               ))}
-          <div className="w-1 shrink-0" aria-hidden />
         </div>
       </div>
     </section>
@@ -539,7 +582,8 @@ function ReviewSheet({ onClose }: { onClose: () => void }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-40 bg-black/50"
+        className="fixed inset-x-0 top-0 z-40 mx-auto w-full max-w-[480px] bg-black/50"
+        style={{ bottom: 'var(--dock-height, 0px)' }}
         onClick={onClose}
       />
       <motion.div
@@ -547,8 +591,8 @@ function ReviewSheet({ onClose }: { onClose: () => void }) {
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-        className="fixed bottom-0 left-1/2 z-50 max-h-[85svh] min-h-[320px] w-full max-w-[480px] -translate-x-1/2 overflow-y-auto rounded-t-3xl bg-white"
-        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 32px)' }}
+        className="fixed left-1/2 z-50 max-h-[85svh] min-h-[320px] w-full max-w-[480px] -translate-x-1/2 overflow-y-auto rounded-t-3xl bg-white pb-8 shadow-[0_-8px_24px_rgba(0,0,0,0.12)]"
+        style={{ bottom: 'var(--dock-height, 0px)' }}
       >
         {/* 핸들 */}
         <div className="flex justify-center pt-3 pb-1">
@@ -634,47 +678,52 @@ function ReviewSheet({ onClose }: { onClose: () => void }) {
   )
 }
 
-/* ─── 인기 검색 주차장 (랭킹 리스트) ─── */
-function BestParkingsSection({
-  parkings,
+/* ─── 인기 검색어 BEST (주간 Top 10 + WoW 변동률) ─── */
+function PopularKeywordsSection({
+  keywords,
   isLoading,
-  onClickParking
+  onClickKeyword
 }: {
-  parkings: PopularParking[]
+  keywords: PopularKeyword[]
   isLoading: boolean
-  onClickParking: (p: PopularParking) => void
+  onClickKeyword: (keyword: PopularKeyword) => void
 }) {
-  const half = Math.ceil(parkings.length / 2)
-  const col1 = parkings.slice(0, half)
-  const col2 = parkings.slice(half)
+  const half = Math.ceil(keywords.length / 2)
+  const col1 = keywords.slice(0, half)
+  const col2 = keywords.slice(half)
 
   return (
     <section className="bg-bg-white py-6">
-      <div className="flex items-center justify-between px-5">
-        <h2 className="text-text-strong text-[18px] font-bold tracking-[-0.3px]">
-          <span className="text-primary">인기검색</span> 주차장 BEST
+      <div className="flex items-end justify-between px-5">
+        <h2 className="text-text-strong flex items-center gap-1.5 text-[18px] font-bold tracking-[-0.3px]">
+          <span aria-hidden>🔥</span>
+          <span>
+            <span className="text-primary">인기검색어</span> BEST
+          </span>
         </h2>
+        <span className="text-text-soft text-[11px]">이번 주</span>
       </div>
       <div className="mt-3 px-5">
         {isLoading ? (
           <div className="grid grid-cols-2 gap-x-4">
-            {Array.from({ length: 6 }).map((_, i) => (
+            {Array.from({ length: 10 }).map((_, i) => (
               <div key={i} className="flex items-center gap-2.5 py-2.5">
                 <div className="bg-bg-soft h-4 w-5 animate-pulse rounded" />
-                <div className="bg-bg-soft h-4 w-20 animate-pulse rounded" />
+                <div className="bg-bg-soft h-4 flex-1 animate-pulse rounded" />
+                <div className="bg-bg-soft h-3 w-10 animate-pulse rounded" />
               </div>
             ))}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-x-4">
             <div className="flex flex-col">
-              {col1.map((p, i) => (
-                <RankingItem key={p.seq} parking={p} rank={i + 1} onClick={() => onClickParking(p)} />
+              {col1.map((k) => (
+                <KeywordRankItem key={k.rank} keyword={k} onClick={() => onClickKeyword(k)} />
               ))}
             </div>
             <div className="flex flex-col">
-              {col2.map((p, i) => (
-                <RankingItem key={p.seq} parking={p} rank={half + i + 1} onClick={() => onClickParking(p)} />
+              {col2.map((k) => (
+                <KeywordRankItem key={k.rank} keyword={k} onClick={() => onClickKeyword(k)} />
               ))}
             </div>
           </div>
@@ -684,14 +733,16 @@ function BestParkingsSection({
   )
 }
 
-function RankingItem({ parking, rank, onClick }: { parking: PopularParking; rank: number; onClick: () => void }) {
-  const isTop3 = rank <= 3
+function KeywordRankItem({ keyword, onClick }: { keyword: PopularKeyword; onClick: () => void }) {
+  const isTop3 = keyword.rank <= 3
+  const delta = keyword.wowDelta
+  const trend: 'up' | 'down' | 'flat' = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
   return (
     <motion.button
       onClick={onClick}
       initial={{ opacity: 0, x: -6 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: rank * 0.03, duration: 0.2, ease: 'easeOut' }}
+      transition={{ delay: keyword.rank * 0.03, duration: 0.2, ease: 'easeOut' }}
       className="flex cursor-pointer items-center gap-2.5 py-2.5 text-left"
     >
       <span
@@ -699,12 +750,28 @@ function RankingItem({ parking, rank, onClick }: { parking: PopularParking; rank
           isTop3 ? 'text-primary' : 'text-text-disabled'
         }`}
       >
-        {rank}
+        {keyword.rank}
       </span>
-      <span className="text-text-strong truncate text-[14px] leading-none font-medium tracking-[-0.2px]">
-        {parking.keyword}
+      <span className="text-text-strong min-w-0 flex-1 truncate text-[14px] leading-none font-medium tracking-[-0.2px]">
+        {keyword.keyword}
       </span>
+      <KeywordTrendBadge trend={trend} delta={delta} />
     </motion.button>
+  )
+}
+
+function KeywordTrendBadge({ trend, delta }: { trend: 'up' | 'down' | 'flat'; delta: number }) {
+  if (trend === 'flat') {
+    return <span className="text-text-disabled text-[11px] leading-none tabular-nums">—</span>
+  }
+  const isUp = trend === 'up'
+  return (
+    <span className="text-text-sub flex shrink-0 items-center gap-0.5 text-[11px] leading-none font-semibold tabular-nums">
+      <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" aria-hidden>
+        {isUp ? <path d="M4 1L7 6H1L4 1Z" /> : <path d="M4 7L1 2H7L4 7Z" />}
+      </svg>
+      {Math.abs(delta).toFixed(1)}%
+    </span>
   )
 }
 
