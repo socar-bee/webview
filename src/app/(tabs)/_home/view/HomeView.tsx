@@ -523,7 +523,7 @@ function TopParkingsSection({
     <section className="bg-bg-white py-6">
       <div className="px-5">
         <h2 className="text-text-strong text-[18px] font-bold tracking-[-0.3px]">
-          인기 주차장 <span className="text-primary">BEST</span>
+          주차장 <span className="text-primary">BEST</span>
         </h2>
       </div>
       <div className="scrollbar-hide mt-4 overflow-x-auto">
