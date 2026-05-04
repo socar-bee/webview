@@ -696,9 +696,17 @@ function PopularKeywordsSection({
     <section className="bg-bg-white py-6">
       <div className="flex items-end justify-between px-5">
         <h2 className="text-text-strong flex items-center gap-1.5 text-[18px] font-bold tracking-[-0.3px]">
-          <span aria-hidden>🔥</span>
+          <img
+            src="/images/icn_hot.webp"
+            alt=""
+            aria-hidden
+            width={24}
+            height={24}
+            className="size-6 object-contain"
+            draggable={false}
+          />
           <span>
-            <span className="text-primary">인기검색어</span> BEST
+            인기검색어 <span className="text-primary">BEST</span>
           </span>
         </h2>
         <span className="text-text-soft text-[11px]">이번 주</span>
