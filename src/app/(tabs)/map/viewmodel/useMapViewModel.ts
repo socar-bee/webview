@@ -39,6 +39,8 @@ export interface UseMapViewModelOptions {
   onPinClick?: (data: ParkingDetailData) => void
   /** URL ?buyable=1 진입 시 구매가능 필터 초기 활성화 */
   initialBuyableOnly?: boolean
+  /** URL ?timefilter=1 진입 시 시간필터 시트 자동 오픈 */
+  initialTimeFilterOpen?: boolean
 }
 
 export function useMapViewModel(options: UseMapViewModelOptions = {}) {
@@ -766,6 +768,10 @@ export function useMapViewModel(options: UseMapViewModelOptions = {}) {
         },
         () => {}
       )
+    }
+    // ?timefilter=1 진입 시 지도 초기화 완료 후 시간필터 시트 오픈
+    if (options.initialTimeFilterOpen) {
+      setIsTimeFilterOpen(true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

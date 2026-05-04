@@ -44,6 +44,7 @@ export default function MapView() {
   const lngParam = searchParams.get('lng')
   const searchCoords = latParam && lngParam ? { lat: parseFloat(latParam), lng: parseFloat(lngParam) } : null
   const initialBuyableOnly = searchParams.get('buyable') === '1'
+  const initialTimeFilterOpen = searchParams.get('timefilter') === '1'
 
   // mount + hashchange + popstate → hash에서 sheet 상태 동기화
   useEffect(() => {
@@ -84,6 +85,7 @@ export default function MapView() {
     },
     searchCoords,
     initialBuyableOnly,
+    initialTimeFilterOpen,
     onPinClick: (data: ParkingDetailData) => {
       if (data.parkingType === ParkingLotType.SHARE) {
         showToast('준비중인 서비스입니다')

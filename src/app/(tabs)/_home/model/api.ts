@@ -22,7 +22,7 @@ const HERO_BANNERS: HeroBanner[] = [
 const QUICK_MENU: QuickMenuItem[] = [
   // Row 1 — 핵심 플로우
   { id: 'buy', label: '바로구매', href: '/map?buyable=1', icon: '/images/icn_buy.webp' },
-  { id: 'reserve', label: '사전예약', href: '/map', icon: '/images/icn_reserve.webp', badge: 'HOT' },
+  { id: 'reserve', label: '사전예약', href: '/map?timefilter=1', icon: '/images/icn_reserve.webp', badge: 'HOT' },
   { id: 'airport', label: '공항주차', action: 'coming_soon', icon: '/images/icn_airport.webp' },
   { id: 'monthly', label: '월정기', action: 'coming_soon', icon: '/images/icn_monthly.webp' },
   { id: 'shared', label: '공유주차', action: 'coming_soon', icon: '/images/icn_shared.webp' },
