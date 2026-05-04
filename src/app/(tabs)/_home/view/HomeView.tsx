@@ -446,7 +446,7 @@ function RegionsSection({
   return (
     <section className="bg-bg-white py-6">
       <div className="flex items-center justify-between px-5">
-        <h2 className="text-text-strong flex items-center gap-1.5 text-[18px] font-bold tracking-[-0.3px]">
+        <h2 className="text-text-strong flex items-center gap-1.5 text-[18px] leading-none font-bold tracking-[-0.3px]">
           지역 <span className="text-primary">BEST</span>
           <img
             src="/images/icn_region_best.webp"
@@ -531,7 +531,7 @@ function TopParkingsSection({
   return (
     <section className="bg-bg-white py-6">
       <div className="px-5">
-        <h2 className="text-text-strong flex items-center gap-1.5 text-[18px] font-bold tracking-[-0.3px]">
+        <h2 className="text-text-strong flex items-center gap-1.5 text-[18px] leading-none font-bold tracking-[-0.3px]">
           주차장 <span className="text-primary">BEST</span>
           <img
             src="/images/icn_parking_best.webp"
@@ -713,7 +713,7 @@ function PopularKeywordsSection({
   return (
     <section className="bg-bg-white py-6">
       <div className="flex items-end justify-between px-5">
-        <h2 className="text-text-strong flex items-center gap-1.5 text-[18px] font-bold tracking-[-0.3px]">
+        <h2 className="text-text-strong flex items-center gap-1.5 text-[18px] leading-none font-bold tracking-[-0.3px]">
           <span>
             인기검색어 <span className="text-primary">BEST</span>
           </span>
