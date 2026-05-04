@@ -392,3 +392,151 @@ body::-webkit-scrollbar {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* ─── Modu Calendar (react-datepicker) ─── */
+.modu-calendar .react-datepicker {
+  border: none;
+  border-radius: 0;
+  background-color: #fff;
+  box-shadow: none;
+  padding: 0;
+  width: 100%;
+  font-family: 'Pretendard', 'Pretendard Variable', sans-serif;
+}
+
+.modu-calendar .react-datepicker__month-container {
+  width: 100%;
+}
+
+.modu-calendar .react-datepicker__header {
+  background-color: #fff;
+  border-bottom: none;
+  padding-top: 0;
+}
+
+.modu-calendar .react-datepicker__day-names {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  padding: 0 12px;
+}
+
+.modu-calendar .react-datepicker__day-name {
+  width: 48px;
+  height: 48px;
+  line-height: 48px;
+  text-align: center;
+  font-family: 'Pretendard', sans-serif;
+  font-weight: 400;
+  color: #171717;
+  font-size: 16px;
+  justify-self: center;
+}
+
+.modu-calendar .react-datepicker__day-name:first-child {
+  color: #ff4c4c;
+}
+
+.modu-calendar .react-datepicker__week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding: 0 12px;
+}
+
+.modu-calendar .react-datepicker__month {
+  margin: 0;
+  padding: 0 0 8px 0;
+}
+
+.modu-calendar .react-datepicker__day {
+  width: 48px;
+  height: 48px;
+  line-height: 48px;
+  text-align: center;
+  border-radius: 24px;
+  font-family: 'Pretendard', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #171717;
+  margin: 0;
+  justify-self: center;
+}
+
+/* 일요일 */
+.modu-calendar .react-datepicker__day--weekend[aria-label*='일요일'] {
+  color: #ff4c4c;
+}
+
+/* 비활성 일요일 — 연한 빨강 */
+.modu-calendar .react-datepicker__day--weekend[aria-label*='일요일'][aria-disabled='true'] {
+  color: #ff9d9d;
+}
+
+/* 선택된 주말은 흰 글씨 유지 */
+.modu-calendar .react-datepicker__day--weekend[aria-label*='일요일'][aria-selected='true'],
+.modu-calendar .react-datepicker__day--weekend[aria-label*='토요일'][aria-selected='true'] {
+  color: #fff;
+}
+
+.modu-calendar .react-datepicker__day:hover {
+  background-color: transparent;
+  border-radius: 24px !important;
+}
+
+.modu-calendar .react-datepicker__day--keyboard-selected {
+  background-color: transparent;
+  color: inherit;
+  box-shadow: none;
+}
+
+/* 선택된 날짜 — #0099FF 원 + 흰 글씨 */
+.modu-calendar .react-datepicker__day--selected,
+.modu-calendar .react-datepicker__day--keyboard-selected.react-datepicker__day--selected {
+  background-color: #0099ff !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 48px;
+}
+
+.modu-calendar .react-datepicker__day--selected:hover {
+  background-color: #0099ff !important;
+}
+
+/* 오늘 — 파란 텍스트 */
+.modu-calendar .react-datepicker__day--today {
+  color: #0099ff;
+  font-weight: 400;
+}
+
+.modu-calendar .react-datepicker__day--today[aria-selected='true'] {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* 비활성 날짜 */
+.modu-calendar .react-datepicker__day--disabled {
+  color: #d1d1d1;
+  cursor: not-allowed;
+}
+
+/* 다른 달 날짜 */
+.modu-calendar .react-datepicker__day--outside-month {
+  color: #d1d1d1;
+}
+
+.modu-calendar .react-datepicker__day--outside-month:not(.react-datepicker__day--disabled) {
+  color: #171717;
+}
+
+.modu-calendar
+  .react-datepicker__day--outside-month.react-datepicker__day--weekend[aria-label*='일요일']:not(
+    .react-datepicker__day--disabled
+  ) {
+  color: #ff4c4c;
+}
+
+/* 기본 네비게이션 숨김 (renderCustomHeader 사용) */
+.modu-calendar .react-datepicker__navigation {
+  display: none;
+}
