@@ -1,6 +1,5 @@
 'use client'
 
-import { addMonths, format, isBefore, startOfMonth } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
@@ -30,15 +29,19 @@ export default function Calendar({ selectedDate, onChange, filterDate, minMonth,
         fixedHeight
         disabledKeyboardNavigation
         renderCustomHeader={({ monthDate, decreaseMonth, increaseMonth }) => {
-          const isPrevDisabled = minMonth ? !isBefore(startOfMonth(minMonth), startOfMonth(monthDate)) : false
+          const y = monthDate.getFullYear()
+          const m = monthDate.getMonth() // 0-based
+          const isPrevDisabled = minMonth
+            ? y < minMonth.getFullYear() || (y === minMonth.getFullYear() && m <= minMonth.getMonth())
+            : false
           const isNextDisabled = maxMonth
-            ? !isBefore(startOfMonth(monthDate), startOfMonth(addMonths(maxMonth, 1)))
+            ? y > maxMonth.getFullYear() || (y === maxMonth.getFullYear() && m >= maxMonth.getMonth())
             : false
 
           return (
             <div className="flex items-center justify-between px-6 py-2">
               <span className="text-[16px] leading-[22px] font-semibold tracking-[-1px] text-[#171717]">
-                {format(monthDate, 'yyyy년 M월')}
+                {`${y}년 ${m + 1}월`}
               </span>
               <div className="flex items-center gap-7 opacity-80">
                 <button onClick={decreaseMonth} disabled={isPrevDisabled} className="p-0">
