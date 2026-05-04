@@ -446,7 +446,16 @@ function RegionsSection({
   return (
     <section className="bg-bg-white py-6">
       <div className="flex items-center justify-between px-5">
-        <h2 className="text-text-strong text-[18px] font-bold tracking-[-0.3px]">
+        <h2 className="text-text-strong flex items-center gap-1.5 text-[18px] font-bold tracking-[-0.3px]">
+          <img
+            src="/images/icn_region_best.webp"
+            alt=""
+            aria-hidden
+            width={24}
+            height={24}
+            className="size-6 object-contain"
+            draggable={false}
+          />
           지역 <span className="text-primary">BEST</span>
         </h2>
         <button
@@ -522,7 +531,16 @@ function TopParkingsSection({
   return (
     <section className="bg-bg-white py-6">
       <div className="px-5">
-        <h2 className="text-text-strong text-[18px] font-bold tracking-[-0.3px]">
+        <h2 className="text-text-strong flex items-center gap-1.5 text-[18px] font-bold tracking-[-0.3px]">
+          <img
+            src="/images/icn_parking_best.webp"
+            alt=""
+            aria-hidden
+            width={24}
+            height={24}
+            className="size-6 object-contain"
+            draggable={false}
+          />
           주차장 <span className="text-primary">BEST</span>
         </h2>
       </div>
