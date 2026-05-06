@@ -8,9 +8,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AnimationSheet, { type SheetSnap } from '@/shared/components/ui/AnimationSheet'
 import { useFavorites } from '@/shared/hooks/useFavorites'
 
+import { formatModifyDate } from '@/shared/lib/date'
+
 import type { RecommendParking } from '@/app/parking/[id]/viewmodel'
 
-import type { ParkingLotTimeContent, ParkingLotType, TicketListItem } from '@/shared/types/parking'
+import type { ParkingLotType, TicketListItem } from '@/shared/types/parking'
 import { CategorySeq, CouponTypeGroup } from '@/shared/types/parking'
 
 import { useParkingDetailViewModel, useRecommendParkingViewModel } from '@/app/parking/[id]/viewmodel'
@@ -143,7 +145,7 @@ export default function ParkingDetailSheet({
     setSlideIndex(0)
   }, [data?.seq, getScrollContainer])
 
-  // snap 변경 시 NavBar 타이틀 리셋
+  // snap 변경 시 NavBar 타이틀 리셋 + 스크롤 위치 리셋
   useEffect(() => {
     if (!isOpen || snap !== 'full') {
       setShowNavTitle(false)
@@ -244,6 +246,7 @@ export default function ParkingDetailSheet({
             capacity={capacity}
             isFavorited={isFavorited}
             onToggleFavorite={handleToggleFavorite}
+            onNavigate={openNavigation}
           />
         ) : null
       }
@@ -298,83 +301,75 @@ export default function ParkingDetailSheet({
           )}
         </div>
 
-        {/* ── Title section (full state) / PeekBar duplicate (peek/half via peek prop) ── */}
-        <div className="bg-bg-white px-4 pt-5 pb-4">
-          <div className="flex items-start justify-between">
-            <div className="min-w-0 pr-3">
-              <h2 className="text-text-strong text-[18px] leading-snug font-bold">{displayName}</h2>
-              <div className="text-text-sub mt-1 flex items-center gap-1 text-[13px]">
-                <span>{getCategoryLabel()}</span>
-                {capacity !== null && (
-                  <>
-                    <span className="text-text-disabled">·</span>
-                    <span>{capacity.toLocaleString()}면</span>
-                  </>
-                )}
+        {/* ── Title + CommentSection (full 상태에서만) ── */}
+        {snap === 'full' && (
+          <div className={`bg-bg-white px-4 pt-5 pb-4`}>
+            {/* 타이틀 */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-text-strong text-[18px] leading-snug font-bold">{displayName}</h2>
+                <div className="text-text-sub mt-1 flex items-center gap-1.5 text-[13px]">
+                  <span>{getCategoryLabel()}</span>
+                  {capacity !== null && (
+                    <>
+                      <svg width="3" height="3" viewBox="0 0 3 3" fill="none">
+                        <circle cx="1.5" cy="1.5" r="1.5" fill="#A3A3A3" />
+                      </svg>
+                      <span>{capacity.toLocaleString()}면</span>
+                    </>
+                  )}
+                  {(getCategoryLabel() || capacity !== null) && <span className="text-stroke-sub mx-0.5">|</span>}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleToggleFavorite()
+                    }}
+                    aria-label={isFavorited ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+                    className="flex shrink-0 cursor-pointer items-center transition-transform active:scale-90"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/images/icn_favorite.webp"
+                      alt=""
+                      width={20}
+                      height={20}
+                      draggable={false}
+                      className={`size-5 object-contain transition-[filter,opacity] ${isFavorited ? '' : 'opacity-50 grayscale'}`}
+                    />
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleToggleFavorite()
-                }}
-                aria-label={isFavorited ? '즐겨찾기 해제' : '즐겨찾기 추가'}
-                className="flex cursor-pointer items-center transition-transform active:scale-90"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/icn_favorite.webp"
-                  alt=""
-                  width={22}
-                  height={22}
-                  draggable={false}
-                  className={`size-[22px] object-contain transition-[filter,opacity] ${isFavorited ? '' : 'opacity-40 grayscale'}`}
-                />
-              </button>
               <button
                 type="button"
                 aria-label="길찾기"
                 onClick={openNavigation}
-                className="bg-primary text-static-white flex size-[46px] shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-[8px]"
+                className="bg-primary text-static-white flex size-[53px] shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-[8px]"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path
                     d="M11.8333 4.50079C11.8333 4.07135 12.339 3.84137 12.6624 4.12384L19.4036 10.0223C19.6311 10.2215 19.6311 10.576 19.4036 10.7752L12.6624 16.6727C12.3391 16.9555 11.8333 16.7263 11.8333 16.2967V12.3983H10.3333C8.95268 12.3983 7.83349 13.5177 7.83325 14.8983V19.3983H3.83325V14.3983C3.83349 11.0847 6.51969 8.39826 9.83325 8.39826H11.8333V4.50079Z"
                     fill="white"
                   />
                 </svg>
-                <span className="text-[9px] font-medium tracking-[0.3px]">길찾기</span>
+                <span className="text-[10px] font-medium tracking-[0.3px]">길찾기</span>
               </button>
             </div>
+            {/* CommentSection — 주차권 없는 경우만 */}
+            {(!isPartner || sortedTickets.length === 0) && (
+              <div className="bg-bg-soft mt-3.5 rounded-md px-5 py-2 text-center">
+                <p className="text-text-sub text-[13px]">아직 주차권을 판매하지 않는 현장입니다.</p>
+              </div>
+            )}
           </div>
-
-          {/* CommentSection */}
-          {isPartner && moduComment ? (
-            <div className="mt-3.5 rounded-md bg-sky-50 px-5 py-2 text-center">
-              <p className="text-text-strong text-[13px]">{moduComment}</p>
-            </div>
-          ) : !isPartner || sortedTickets.length === 0 ? (
-            <div className="bg-bg-soft mt-3.5 rounded-md px-5 py-2 text-center">
-              <p className="text-text-sub text-[13px]">아직 주차권을 판매하지 않는 현장입니다.</p>
-            </div>
-          ) : null}
-        </div>
+        )}
 
         {/* ── Ticket stub cards ── */}
         {isPartner && sortedTickets.length > 0 && (
-          <div className="bg-bg-white pb-5 pl-4">
-            <div className="scrollbar-hide flex gap-2 overflow-x-auto pr-4">
-              {sortedTickets.map((ticket) => (
-                <TicketStubCard
-                  key={ticket.couponSeq}
-                  ticket={ticket}
-                  onClick={() => vm.goToPayment(ticket.couponSeq)}
-                />
-              ))}
-              <div className="w-2 shrink-0" />
-            </div>
-          </div>
+          <TicketList
+            tickets={sortedTickets}
+            onTicketClick={(seq) => vm.goToPayment(seq)}
+            moduComment={moduComment || undefined}
+          />
         )}
 
         {/* ── Section divider ── */}
@@ -453,22 +448,24 @@ function NavigationBar({ title, showTitle, onBack }: { title: string; showTitle:
   )
 }
 
-/* ─── PeekBar (peek/half 상태용) ─── */
+/* ─── PeekBar (모든 snap 상태에서 고정 노출) ─── */
 function PeekBar({
   name,
   typeLabel,
   capacity,
   isFavorited,
-  onToggleFavorite
+  onToggleFavorite,
+  onNavigate
 }: {
   name: string
   typeLabel: string | null
   capacity: number | null
   isFavorited: boolean
   onToggleFavorite: () => void
+  onNavigate: () => void
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-5 pt-2 pb-5">
+    <div className="flex items-center justify-between gap-3 px-5 pt-1 pb-5">
       <div className="min-w-0 flex-1">
         <h3 className="text-text-strong truncate text-[18px] leading-[1.4] font-bold">{name}</h3>
         <div className="text-text-sub mt-0.5 flex items-center gap-1.5 text-[14px]">
@@ -501,7 +498,10 @@ function PeekBar({
         </div>
       </div>
       <button
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation()
+          onNavigate()
+        }}
         className="bg-primary text-static-white flex size-[53px] shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-[8px]"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -516,57 +516,134 @@ function PeekBar({
   )
 }
 
+/* ─── TicketList ─── */
+const TICKET_PREVIEW_COUNT = 3
+
+function TicketList({
+  tickets,
+  onTicketClick,
+  moduComment
+}: {
+  tickets: TicketListItem[]
+  onTicketClick: (seq: number) => void
+  moduComment?: string
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const hasMore = tickets.length > TICKET_PREVIEW_COUNT
+  const visible = expanded ? tickets : tickets.slice(0, TICKET_PREVIEW_COUNT)
+
+  return (
+    <div className="bg-bg-white px-4 pt-4 pb-4">
+      {moduComment && (
+        <div className="mb-3 rounded-md bg-sky-50 px-5 py-2 text-center">
+          <p className="text-text-strong text-[13px]">{moduComment}</p>
+        </div>
+      )}
+      <div className="flex flex-col gap-2.5 pt-4">
+        {visible.map((ticket) => (
+          <TicketStubCard key={ticket.couponSeq} ticket={ticket} onClick={() => onTicketClick(ticket.couponSeq)} />
+        ))}
+      </div>
+      {hasMore && !expanded && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="border-stroke-soft text-text-sub mt-3 flex h-[38px] w-full items-center justify-center gap-1 rounded-xl border text-[13px] font-medium"
+        >
+          전체보기
+          <span className="text-text-disabled text-[12px]">({tickets.length}개)</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M6 9l6 6 6-6"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      )}
+    </div>
+  )
+}
+
 /* ─── TicketStubCard ─── */
 function TicketStubCard({ ticket, onClick }: { ticket: TicketListItem; onClick: () => void }) {
   const isDisabled = ticket.isSoldOut || !ticket.isOpen
+  const isSoldOut = ticket.isSoldOut
+  const isComingSoon = !ticket.isOpen && !ticket.isSoldOut
 
-  const description = (() => {
-    if (ticket.isSoldOut) return '매진'
-    if (!ticket.isOpen) return ticket.nextTimeLabel
-    if (Number(ticket.couponTypeGroup) === CouponTypeGroup.MONTHLY) return ticket.usingDateLabel
-    return `${ticket.usingDateLabel} ${ticket.usingTimeLabel}`
-  })()
+  const statusLabel = isSoldOut ? '매진' : isComingSoon ? '판매예정' : '구매가능'
+  const statusColor = isSoldOut ? 'bg-[#d1d5db]' : isComingSoon ? 'bg-amber-400' : 'bg-emerald-400'
+
+  const descLine =
+    ticket.isOpen || Number(ticket.couponTypeGroup) === CouponTypeGroup.MONTHLY
+      ? `${ticket.usingDateLabel} ${ticket.usingTimeLabel}`
+      : ticket.nextTimeLabel
 
   return (
     <div
-      className={`relative w-[172px] shrink-0 cursor-pointer ${isDisabled ? 'opacity-50' : ''}`}
+      className={`relative w-full ${isDisabled ? 'cursor-default' : 'cursor-pointer'}`}
       onClick={() => !isDisabled && onClick()}
     >
       <div
-        className={`relative flex flex-col rounded-md border ${
-          isDisabled ? 'border-stroke-soft bg-bg-soft' : 'border-primary/25 bg-primary/5'
+        className={`flex h-[86px] w-full overflow-visible rounded-2xl border ${
+          isDisabled
+            ? 'border-[#e9ebef] bg-[#f7f8fa]'
+            : 'border-primary/20 bg-white shadow-[0_2px_10px_rgba(59,130,246,0.09)]'
         }`}
       >
-        {/* Left notch */}
-        <div
-          className={`bg-bg-white absolute top-1/2 -left-px h-3 w-1.5 -translate-y-1/2 rounded-r-full border-y border-r ${
-            isDisabled ? 'border-stroke-soft' : 'border-primary/25'
-          }`}
-        />
-        {/* Right notch */}
-        <div
-          className={`bg-bg-white absolute top-1/2 -right-px h-3 w-1.5 -translate-y-1/2 rounded-l-full border-y border-l ${
-            isDisabled ? 'border-stroke-soft' : 'border-primary/25'
-          }`}
-        />
-
-        <div className="flex items-center justify-between gap-2 px-3 py-3">
-          <span
-            className={`truncate text-[13px] font-medium ${isDisabled ? 'text-text-disabled' : 'text-text-strong'}`}
+        {/* 왼쪽: 정보 영역 */}
+        <div className="flex flex-1 flex-col justify-center gap-1 px-4">
+          {/* 상태 */}
+          <div className="flex items-center gap-1.5">
+            <span className={`h-[6px] w-[6px] shrink-0 rounded-full ${statusColor}`} />
+            <span className={`text-[11px] font-medium ${isDisabled ? 'text-[#b0b8c1]' : 'text-[#64748b]'}`}>
+              {statusLabel}
+            </span>
+          </div>
+          {/* 이름 */}
+          <p
+            className={`truncate text-[15px] leading-tight font-bold ${isDisabled ? 'text-[#b0b8c1]' : 'text-[#1e293b]'}`}
           >
             {ticket.couponName}
-          </span>
-          <span className={`shrink-0 text-[15px] font-bold ${isDisabled ? 'text-text-disabled' : 'text-primary'}`}>
-            {ticket.price.toLocaleString()}원
-          </span>
+          </p>
+          {/* 날짜/시간 */}
+          {descLine && (
+            <p className={`truncate text-[11px] ${isDisabled ? 'text-[#c8d0da]' : 'text-[#94a3b8]'}`}>{descLine}</p>
+          )}
         </div>
 
-        <div className={`mx-2 border-t border-dashed ${isDisabled ? 'border-stroke-soft' : 'border-primary/25'}`} />
+        {/* 세로 뜯는 선 */}
+        <div className="relative flex flex-col items-center py-3">
+          {/* 상단 노치 */}
+          <div
+            className={`absolute -top-[1px] h-[10px] w-[20px] rounded-b-full border-x border-b ${
+              isDisabled ? 'bg-bg-weak border-[#e9ebef]' : 'border-primary/20 bg-bg-white'
+            }`}
+          />
+          {/* 점선 */}
+          <div
+            className={`h-full w-px border-l border-dashed ${isDisabled ? 'border-[#e9ebef]' : 'border-primary/20'}`}
+          />
+          {/* 하단 노치 */}
+          <div
+            className={`absolute -bottom-[1px] h-[10px] w-[20px] rounded-t-full border-x border-t ${
+              isDisabled ? 'bg-bg-weak border-[#e9ebef]' : 'border-primary/20 bg-bg-white'
+            }`}
+          />
+        </div>
 
-        <div className="px-3 py-1.5">
-          <span className={`block truncate text-[11px] ${isDisabled ? 'text-text-disabled' : 'text-text-sub'}`}>
-            {description}
-          </span>
+        {/* 오른쪽: 가격 영역 */}
+        <div className="flex w-[100px] shrink-0 flex-col items-center justify-center gap-1.5 px-2">
+          <p
+            className={`text-[19px] leading-none font-bold tracking-tight whitespace-nowrap ${isDisabled ? 'text-[#c8d0da]' : 'text-primary'}`}
+          >
+            {ticket.price.toLocaleString()}
+            <span className={`ml-0.5 text-[12px] font-medium ${isDisabled ? 'text-[#c8d0da]' : 'text-primary/80'}`}>
+              원
+            </span>
+          </p>
+          {!isDisabled && <span className="text-primary/60 text-[11px] font-medium">구매하기 ›</span>}
         </div>
       </div>
     </div>
@@ -602,81 +679,153 @@ function InfoTab({
   const operationTime = openFree.operationTime?.replace(/익일\s*/g, '') ?? null
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-text-strong text-[18px] font-bold">주차 정보</h2>
-        {modifyDate && (
-          <span className="text-text-soft flex items-center gap-1 text-[12px]">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="#A3A3A3" strokeWidth="1.5" />
-              <path d="M12 7v5l3 3" stroke="#A3A3A3" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            정보 업데이트: {modifyDate}
-          </span>
-        )}
-      </div>
+    <div className="flex flex-col gap-4 px-4 py-5">
+      {modifyDate && (
+        <div className="flex items-center justify-end gap-1">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" stroke="#A3A3A3" strokeWidth="1.5" />
+            <path d="M12 7v5l3 3" stroke="#A3A3A3" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <span className="text-text-disabled text-[12px]">정보 업데이트: {formatModifyDate(modifyDate)}</span>
+        </div>
+      )}
 
-      <div className="flex flex-col gap-2.5">
-        {operationTime && <InfoRow label="운영 시간" value={operationTime} />}
-        {currentFee && <InfoRow label="현장 요금" value={currentFee} />}
+      {/* 요금 안내 */}
+      {prices.length > 0 && prices[0].contents.length > 0 && (
+        <InfoCard
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="6" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M2 10h20" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+          }
+          title="요금 안내"
+        >
+          <div className="flex flex-col gap-2">
+            {prices[0].contents.slice(0, 4).map((item, idx) => (
+              <div key={`price-${idx}`} className="flex items-center justify-between gap-3">
+                <span className="text-text-sub text-[13px]">{item.key}</span>
+                <span className="text-text-strong text-right text-[13px]">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </InfoCard>
+      )}
+
+      {/* 운영 시간 */}
+      {times.length > 0 && times[0].contents.length > 0 && (
+        <InfoCard
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          }
+          title="운영 시간"
+        >
+          <div className="flex flex-col gap-2">
+            {times[0].contents.map((item, idx) => (
+              <div key={`time-${idx}`} className="flex items-center justify-between gap-3">
+                <span className="text-text-sub text-[13px]">{item.key}</span>
+                <span className="text-text-strong text-right text-[13px]">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </InfoCard>
+      )}
+
+      {/* 요약 요금/시간 — 상세 데이터 없을 때 fallback */}
+      {(prices.length === 0 || prices[0].contents.length === 0) && currentFee && (
         <div className="flex items-center justify-between gap-3">
-          <span className="text-text-sub shrink-0 text-[15px]">주소</span>
+          <span className="text-text-sub shrink-0 text-[14px]">현장 요금</span>
+          <span className="text-text-strong text-right text-[14px]">{currentFee}</span>
+        </div>
+      )}
+      {(times.length === 0 || times[0].contents.length === 0) && operationTime && (
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-text-sub shrink-0 text-[14px]">운영 시간</span>
+          <span className="text-text-strong text-right text-[14px]">{operationTime}</span>
+        </div>
+      )}
+
+      {/* 주소 */}
+      {address && (
+        <InfoCard
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                fill="none"
+              />
+            </svg>
+          }
+          title="주소"
+        >
           <button
-            className="flex min-w-0 cursor-pointer items-center gap-1 text-right"
+            className="flex w-full min-w-0 cursor-pointer items-center gap-1 text-left"
             onClick={() => onCopyAddress(address)}
           >
-            <span className="text-text-strong truncate text-[15px]">{address}</span>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0">
+            <span className="text-text-strong flex-1 text-[13px]">{address}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0">
               <rect x="9" y="9" width="11" height="11" rx="1.5" stroke="#A3A3A3" strokeWidth="1.5" />
               <path d="M5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h10a1 1 0 011 1v1" stroke="#A3A3A3" strokeWidth="1.5" />
             </svg>
           </button>
-        </div>
-        {basic.phone && (
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-text-sub shrink-0 text-[15px]">주차장번호</span>
-            <a href={`tel:${basic.phone}`} className="text-primary text-[15px]">
-              {basic.phone}
-            </a>
-          </div>
-        )}
-      </div>
+        </InfoCard>
+      )}
 
-      {prices.map((section, i) => (
-        <InfoCardSection key={`price-${i}`} icon="fare" title={section.title} contents={section.contents} />
-      ))}
-      {times.map((section, i) => (
-        <InfoCardSection key={`time-${i}`} icon="clock" title={section.title} contents={section.contents} />
-      ))}
-
+      {/* 추가 정보 (options) */}
       {basic.options.length > 0 && (
-        <div className="border-stroke-soft flex flex-col gap-3 rounded-xl border p-4">
-          <div className="flex items-center gap-2">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <InfoCard
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path
-                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                stroke="#A3A3A3"
-                strokeWidth="1.5"
+                d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"
+                fill="currentColor"
               />
             </svg>
-            <span className="text-text-sub text-[15px] font-semibold">추가 정보</span>
-          </div>
+          }
+          title="추가 정보"
+        >
           <div className="flex flex-wrap gap-2">
             {basic.options.map((opt) => (
-              <span key={opt} className="bg-primary/10 text-primary rounded-full px-3 py-1 text-[13px] font-medium">
+              <span key={opt} className="bg-primary/10 text-primary rounded-full px-3 py-1.5 text-[12px] font-medium">
                 {opt}
               </span>
             ))}
           </div>
-        </div>
+        </InfoCard>
       )}
 
+      {/* 주차장 번호 */}
+      {basic.phone && (
+        <InfoCard
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+            </svg>
+          }
+          title="주차장번호"
+        >
+          <a href={`tel:${basic.phone}`} className="text-primary text-[14px] font-medium">
+            {basic.phone}
+          </a>
+        </InfoCard>
+      )}
+
+      {/* 주의사항 */}
       <div className="flex items-start gap-3 rounded-xl bg-amber-50 p-4">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0">
-          <path d="M12 2L2 20h20L12 2z" stroke="#C9A227" strokeWidth="1.5" />
-          <path d="M12 9v5M12 16.5v.5" stroke="#C9A227" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M12 2L2 20h20L12 2z" stroke="#F59E0B" strokeWidth="1.5" />
+          <path d="M12 9v5M12 16.5v.5" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
-        <p className="text-[12px] leading-relaxed text-[#7A6D33]">
+        <p className="text-[12px] leading-relaxed text-amber-700">
           현장 정보와 일치하지 않아 발생한 피해는 모두의주차장이 책임을 지거나 보상하지 않습니다.
         </p>
       </div>
@@ -684,48 +833,14 @@ function InfoTab({
   )
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-text-sub shrink-0 text-[15px]">{label}</span>
-      <span className="text-text-strong text-right text-[15px]">{value}</span>
-    </div>
-  )
-}
-
-function InfoCardSection({
-  icon,
-  title,
-  contents
-}: {
-  icon: 'fare' | 'clock'
-  title: string
-  contents: ParkingLotTimeContent['contents']
-}) {
+function InfoCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
     <div className="border-stroke-soft flex flex-col gap-3 rounded-xl border p-4">
       <div className="flex items-center gap-2">
-        {icon === 'fare' ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <rect x="2" y="6" width="20" height="14" rx="2" stroke="#A3A3A3" strokeWidth="1.5" />
-            <path d="M2 10h20" stroke="#A3A3A3" strokeWidth="1.5" />
-          </svg>
-        ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="9" stroke="#A3A3A3" strokeWidth="1.5" />
-            <path d="M12 7v5l3 3" stroke="#A3A3A3" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        )}
-        <span className="text-text-sub text-[15px] font-semibold">{title}</span>
+        <span className="text-primary">{icon}</span>
+        <span className="text-text-strong text-[14px] font-bold">{title}</span>
       </div>
-      <div className="flex flex-col gap-2">
-        {contents.map((item, idx) => (
-          <div key={`${item.key}-${idx}`} className="flex items-center justify-between gap-3">
-            <span className="text-text-sub text-[13px]">{item.key}</span>
-            <span className="text-text-strong text-right text-[13px]">{item.value}</span>
-          </div>
-        ))}
-      </div>
+      {children}
     </div>
   )
 }
@@ -835,31 +950,93 @@ function RecommendCard({ item, index }: { item: RecommendParking; index: number 
 
 /* ─── NearbyTab ─── */
 function NearbyTab({ detail }: { detail: ReturnType<typeof useParkingDetailViewModel>['detail'] }) {
+  const [feedback, setFeedback] = useState<'like' | 'dislike' | null>(null)
+
   if (!detail?.aiDescription) {
     return (
-      <div className="p-6">
-        <h2 className="text-text-strong mb-3 text-[18px] font-bold">주변 정보</h2>
-        <p className="text-text-soft text-[14px]">주변 정보가 없습니다.</p>
+      <div className="p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <div className="bg-primary/10 flex items-center rounded-full px-2 py-0.5">
+            <span className="text-primary text-[10px] font-bold">AI</span>
+          </div>
+          <span className="text-text-strong text-[15px] font-bold">주변 정보</span>
+        </div>
+        <p className="text-text-disabled text-[14px]">주변 정보가 없습니다.</p>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-5 p-6">
-      <h2 className="text-text-strong text-[18px] font-bold">주변 정보</h2>
-      <div
-        className="border-stroke-soft flex gap-2.5 rounded-lg border p-3"
-        style={{ background: 'linear-gradient(130deg, #F0EBFF 0%, #F0F9FF 100%)' }}
-      >
-        <div className="mt-1.5 shrink-0">
-          <div
-            className="flex size-6 items-center justify-center rounded-full text-[13px] font-semibold text-white"
-            style={{ background: 'linear-gradient(137deg, #F49DFF 8%, #09F 120%)' }}
-          >
-            AI
+    <div className="px-4 py-5">
+      <div className="mb-4 flex items-center gap-2">
+        <div className="bg-primary/10 flex items-center rounded-full px-2 py-0.5">
+          <span className="text-primary text-[10px] font-bold">AI</span>
+        </div>
+        <span className="text-text-strong text-[15px] font-bold">주변 정보</span>
+      </div>
+
+      <div className="flex items-start gap-2.5">
+        {/* AI 아바타 */}
+        <div className="bg-primary/10 flex shrink-0 items-center justify-center overflow-hidden rounded-full p-1.5">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 2a2 2 0 0 1 2 2v1h3a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h3V4a2 2 0 0 1 2-2zm-3 9a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm6 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"
+              fill="currentColor"
+              className="text-primary"
+            />
+          </svg>
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          {/* 말풍선 */}
+          <div className="border-stroke-soft rounded-2xl rounded-tl-sm border bg-gradient-to-br from-[#fafafa] to-[#f0f4f8] px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <p className="text-text-strong text-[13px] leading-relaxed">{detail.aiDescription.response}</p>
+            <div className="border-stroke-soft mt-2 border-t pt-2">
+              <span className="text-text-disabled text-[11px]">AI가 작성한 정보로 실제와 다를 수 있어요</span>
+            </div>
+          </div>
+
+          {/* 피드백 버튼 */}
+          <div className="flex items-center gap-3">
+            <span className="text-text-disabled text-[12px]">도움이 됐나요?</span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={feedback === 'dislike'}
+                onClick={() => setFeedback((prev) => (prev === 'like' ? null : 'like'))}
+                className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] leading-none font-medium transition-all ${
+                  feedback === 'like'
+                    ? 'bg-primary pointer-events-none text-white shadow-[0_2px_8px_rgba(59,130,246,0.3)]'
+                    : feedback !== null
+                      ? 'bg-bg-soft text-text-disabled pointer-events-none'
+                      : 'bg-primary/10 text-primary active:bg-primary/20'
+                }`}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z" />
+                </svg>
+                추천
+              </button>
+              <button
+                type="button"
+                disabled={feedback === 'like'}
+                onClick={() => setFeedback((prev) => (prev === 'dislike' ? null : 'dislike'))}
+                className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] leading-none font-medium transition-all ${
+                  feedback === 'dislike'
+                    ? 'bg-primary pointer-events-none text-white shadow-[0_2px_8px_rgba(59,130,246,0.3)]'
+                    : feedback !== null
+                      ? 'bg-bg-soft text-text-disabled pointer-events-none'
+                      : 'bg-bg-soft text-text-sub active:bg-bg-weak'
+                }`}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="rotate-180">
+                  <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z" />
+                </svg>
+                비추천
+              </button>
+            </div>
           </div>
         </div>
-        <p className="text-text-strong text-[15px] leading-[1.65]">{detail.aiDescription.response}</p>
       </div>
     </div>
   )
@@ -868,58 +1045,46 @@ function NearbyTab({ detail }: { detail: ReturnType<typeof useParkingDetailViewM
 /* ─── Footer ─── */
 function Footer() {
   return (
-    <div className="flex flex-col">
-      <div className="w-full">
-        <img src="/images/banner_ad_recruit.svg" alt="이 자리에 광고를 모집하고 있어요" className="block w-full" />
-      </div>
-      <div className="flex flex-1 flex-col gap-6 bg-[#f7f7f7] p-6 pb-24">
-        <button className="border-primary text-primary h-[46px] w-full rounded-xl border text-[14px] font-medium">
-          모두의 주차장 앱 다운로드
-        </button>
-        <div className="flex flex-col gap-1.5 text-[12px] leading-[1.5] text-[#a3a3a3]">
-          <p>(주) 쏘카</p>
-          <p>통신판매업 신고: 제 2019-제주오라-3호</p>
-          <p>사업자등록번호: 616-81-90529, 대표자: 박재욱</p>
-          <p>서비스 문의 번호: 1899-8242, Fax: 02-6969-9333</p>
-          <p>주소: 제주특별자치도 제주시 공항서로 141 (도두이동)</p>
+    <div className="bg-bg-soft px-4 py-6 pb-24">
+      <button
+        className="border-stroke-soft text-text-strong h-[38px] w-full rounded-lg border bg-white text-[13px] font-medium"
+        onClick={() => window.open('https://l.modu.kr/main', '_blank')}
+      >
+        앱 다운로드하기
+      </button>
+      <div className="mt-6 flex flex-col gap-2">
+        {[
+          '(주) 쏘카',
+          '통신판매업 신고: 제 2019-제주오라-3호',
+          '사업자등록번호: 616-81-90529, 대표자: 박재욱',
+          '서비스 문의 번호: 1899-8242, Fax: 02-6969-9333',
+          '주소: 제주특별자치도 제주시 공항서로 141 (도두이동)'
+        ].map((text) => (
+          <p key={text} className="text-text-sub text-[11px] leading-[1.5]">
+            {text}
+          </p>
+        ))}
+        <div className="mt-1 flex items-center">
+          {[
+            { label: '이용약관', href: 'https://app.modu.kr/terms' },
+            { label: '개인정보처리방침', href: 'https://app.modu.kr/privacy' },
+            { label: '위치정보 이용약관', href: 'https://app.modu.kr/location' },
+            { label: '고객센터', href: 'https://help.modu.kr' }
+          ].map((item, i, arr) => (
+            <span key={item.href} className="flex items-center">
+              <Link
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-text-sub text-[11px] underline underline-offset-2"
+              >
+                {item.label}
+              </Link>
+              {i < arr.length - 1 && <span className="border-stroke-sub mx-2 inline-block h-[8px] w-px border-l" />}
+            </span>
+          ))}
         </div>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[#a3a3a3]">
-          <Link
-            href="https://app.modu.kr/terms"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline-offset-2 hover:underline"
-          >
-            이용약관
-          </Link>
-          <span>|</span>
-          <Link
-            href="https://app.modu.kr/privacy"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline-offset-2 hover:underline"
-          >
-            개인정보처리방침
-          </Link>
-          <span>|</span>
-          <Link
-            href="https://app.modu.kr/location"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline-offset-2 hover:underline"
-          >
-            위치정보 이용약관
-          </Link>
-          <span>|</span>
-          <Link
-            href="https://help.modu.kr"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline-offset-2 hover:underline"
-          >
-            고객센터
-          </Link>
-        </div>
+        <hr className="border-stroke-soft mt-1" />
       </div>
     </div>
   )
