@@ -4,6 +4,8 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { formatModifyDate } from '@/shared/lib/date'
+
 import { useParkingDetailViewModel, useRecommendParkingViewModel } from '../viewmodel'
 import type { ParkingLotTimeContent, TicketListItem } from '@/shared/types/parking'
 import { CategorySeq, CouponTypeGroup } from '@/shared/types/parking'
@@ -207,20 +209,20 @@ export default function ParkingDetailView({ seq, initialDetail }: ParkingDetailV
           <>
             <div
               ref={heroSliderRef}
-              className="scrollbar-hide flex h-full w-full overflow-x-scroll"
+              className="scrollbar-hide flex h-[280px] w-full overflow-x-scroll"
               style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
             >
               {heroImages.map((photo, i) => (
                 <div
                   key={i}
-                  className="relative h-full w-full shrink-0"
+                  className="relative h-[280px] w-full shrink-0"
                   style={{ scrollSnapAlign: 'start' } as React.CSSProperties}
                 >
                   <Image
                     src={photo.file_name}
                     alt={`${detail?.basic.name ?? ''} 이미지 ${i + 1}`}
                     fill
-                    sizes="100vw"
+                    sizes="(max-width: 480px) 100vw, 480px"
                     className="object-cover"
                   />
                 </div>
@@ -274,22 +276,23 @@ export default function ParkingDetailView({ seq, initialDetail }: ParkingDetailV
           </button>
         </div>
 
-        {/* CommentSection */}
-        {isPartner && moduComment ? (
-          <div className="mt-4 rounded-md bg-sky-50 px-6 py-2.5 text-center">
-            <p className="text-text-strong text-sm">{moduComment}</p>
-          </div>
-        ) : !isPartner || sortedTickets.length === 0 ? (
+        {/* CommentSection — 주차권 없는 경우만 */}
+        {(!isPartner || sortedTickets.length === 0) && (
           <div className="bg-bg-soft mt-4 rounded-md px-6 py-2.5 text-center">
             <p className="text-text-sub text-sm">아직 주차권을 판매하지 않는 현장입니다.</p>
           </div>
-        ) : null}
+        )}
       </div>
 
       {/* ── Ticket stub cards ── */}
       {isPartner && sortedTickets.length > 0 && (
         <div className="bg-bg-white pb-5 pl-4">
-          <div className="scrollbar-hide flex gap-2 overflow-x-auto pr-4">
+          {moduComment && (
+            <div className="mb-3 rounded-md bg-sky-50 px-5 py-2 pt-4 text-center">
+              <p className="text-text-strong text-[13px]">{moduComment}</p>
+            </div>
+          )}
+          <div className={`scrollbar-hide flex gap-2 overflow-x-auto pr-4 ${moduComment ? '' : 'pt-4'}`}>
             {sortedTickets.map((ticket) => (
               <TicketStubCard key={ticket.couponSeq} ticket={ticket} onClick={() => vm.goToPayment(ticket.couponSeq)} />
             ))}
@@ -443,10 +446,9 @@ function TicketStubCard({ ticket, onClick }: { ticket: TicketListItem; onClick: 
 }
 
 function getTicketDescription(ticket: TicketListItem): string {
-  if (ticket.isSoldOut) return '매진'
-  if (!ticket.isOpen) return ticket.nextTimeLabel
-  if (Number(ticket.couponTypeGroup) === CouponTypeGroup.MONTHLY) return ticket.usingDateLabel
-  return `${ticket.usingDateLabel} ${ticket.usingTimeLabel}`
+  if (ticket.isOpen || Number(ticket.couponTypeGroup) === CouponTypeGroup.MONTHLY)
+    return `${ticket.usingDateLabel} ${ticket.usingTimeLabel}`
+  return ticket.nextTimeLabel
 }
 
 function InfoSection({
@@ -475,6 +477,8 @@ function InfoSection({
   const currentFee = formatCurrentFee(basic.calcPrices)
   const address = basic.newAddress || basic.address
   const operationTime = openFree.operationTime?.replace(/익일\s*/g, '') ?? null
+  const hasPrices = prices.length > 0 && prices[0].contents.length > 0
+  const hasTimes = times.length > 0 && times[0].contents.length > 0
 
   return (
     <div className="bg-bg-white flex flex-col gap-6 p-6">
@@ -486,14 +490,14 @@ function InfoSection({
               <circle cx="12" cy="12" r="9" stroke="#A3A3A3" strokeWidth="1.5" />
               <path d="M12 7v5l3 3" stroke="#A3A3A3" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
-            정보 업데이트: {modifyDate}
+            정보 업데이트: {formatModifyDate(modifyDate)}
           </span>
         )}
       </div>
 
       <div className="flex flex-col gap-2.5">
-        {operationTime && <InfoRow label="운영 시간" value={operationTime} />}
-        {currentFee && <InfoRow label="현장 요금" value={currentFee} />}
+        {!hasTimes && operationTime && <InfoRow label="운영 시간" value={operationTime} />}
+        {!hasPrices && currentFee && <InfoRow label="현장 요금" value={currentFee} />}
         <div className="flex items-center justify-between gap-3">
           <span className="text-text-sub shrink-0 text-[15px]">주소</span>
           <button
@@ -517,12 +521,8 @@ function InfoSection({
         )}
       </div>
 
-      {prices.map((section, i) => (
-        <InfoCardSection key={`price-${i}`} icon="fare" title={section.title} contents={section.contents} />
-      ))}
-      {times.map((section, i) => (
-        <InfoCardSection key={`time-${i}`} icon="clock" title={section.title} contents={section.contents} />
-      ))}
+      {hasPrices && <InfoCardSection icon="fare" title={prices[0].title} contents={prices[0].contents.slice(0, 4)} />}
+      {hasTimes && <InfoCardSection icon="clock" title={times[0].title} contents={times[0].contents} />}
 
       {basic.options.length > 0 && (
         <div className="border-stroke-soft flex flex-col gap-3 rounded-xl border p-4">
