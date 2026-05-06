@@ -1,3 +1,5 @@
+import axios from 'axios'
+
 import apiClient from '@/shared/lib/apiClient'
 
 import type {
@@ -14,10 +16,8 @@ import type {
   RequestVerifyCodePayload
 } from '@/shared/types/purchase'
 
-import { advanceApiClient } from '@/app/(tabs)/map/model/api'
-
 export async function fetchDailyAbleTime(seq: string | number, parkingDate: string): Promise<AbleTime[]> {
-  const { data } = await advanceApiClient.get<{ data: { ableTimes: AbleTime[] } }>(`/ticket/${seq}/daily-able-time`, {
+  const { data } = await axios.get<{ data: { ableTimes: AbleTime[] } }>(`/ticket/${seq}/daily-able-time`, {
     params: { parkingDate }
   })
   return data.data.ableTimes

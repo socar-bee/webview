@@ -12,17 +12,13 @@ import type {
 
 import type { PinsGroupV2 } from '@/shared/types/map'
 
-export const advanceApiClient = axios.create({
-  baseURL: 'https://moduapi-dev-preview-advance-purchase.socar.me'
-})
-
 export async function fetchTimeFilterOptions(): Promise<TimeFilterOptions> {
-  const { data } = await advanceApiClient.get<{ data: TimeFilterOptions }>('/ticket/time-filter-options')
+  const { data } = await axios.get<{ data: TimeFilterOptions }>('/ticket/time-filter-options')
   return data.data
 }
 
 export async function fetchPoiMeta(bounds: Bounds): Promise<PoiMeta> {
-  const { data } = await advanceApiClient.get<{ data: PoiMeta }>('/poi/meta', {
+  const { data } = await axios.get<{ data: PoiMeta }>('/poi/meta', {
     params: {
       swLat: bounds.sw.lat,
       swLng: bounds.sw.lng,
@@ -34,12 +30,12 @@ export async function fetchPoiMeta(bounds: Bounds): Promise<PoiMeta> {
 }
 
 export async function fetchPinAssets(): Promise<PinAssetsData> {
-  const { data } = await advanceApiClient.get<{ data: PinAssetsData }>('/poi/pin-assets')
+  const { data } = await axios.get<{ data: PinAssetsData }>('/poi/pin-assets')
   return data.data
 }
 
 export async function fetchPinsV2(geohashes: string, timeFilter: TimeFilterDefaults): Promise<PinsGroupV2[]> {
-  const { data } = await advanceApiClient.get<{ data: PinsGroupV2[] }>('/poi/pins', {
+  const { data } = await axios.get<{ data: PinsGroupV2[] }>('/poi/pins', {
     params: {
       geohash: geohashes,
       durationId: timeFilter.durationId,
@@ -51,10 +47,9 @@ export async function fetchPinsV2(geohashes: string, timeFilter: TimeFilterDefau
 }
 
 export async function fetchTicketGroupPins(geohashes: string): Promise<TicketGroupPin[]> {
-  const { data } = await advanceApiClient.get<{ data: { ticketGroupPins: TicketGroupPin[] } }>(
-    '/poi/pins/ticket-group',
-    { params: { geohash: geohashes } }
-  )
+  const { data } = await axios.get<{ data: { ticketGroupPins: TicketGroupPin[] } }>('/poi/pins/ticket-group', {
+    params: { geohash: geohashes }
+  })
   return data.data.ticketGroupPins ?? []
 }
 

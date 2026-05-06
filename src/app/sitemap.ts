@@ -1,13 +1,13 @@
+import axios from 'axios'
+
 import { SEO_BLOCK_PARKINGLOT_SEQ_LIST } from '@/shared/lib/seo'
 
 import type { MetadataRoute } from 'next'
 
-import { advanceApiClient } from '@/app/(tabs)/map/model/api'
-
 export const dynamic = 'force-dynamic'
 
 async function getParkinglotSeqs(): Promise<number[]> {
-  const { data } = await advanceApiClient.get<{ data: { parkinglotSeqs: number[] } }>('/poi/sitemap')
+  const { data } = await axios.get<{ data: { parkinglotSeqs: number[] } }>('/poi/sitemap')
   return data.data.parkinglotSeqs
 }
 

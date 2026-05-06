@@ -20,8 +20,7 @@ function PoiWrapper({ children }: { children: React.ReactNode }) {
 
 /**
  * 마커 색상 팔레트 — 우선순위: isOn(선택) > isFavorite(즐겨찾기) > 기본
- * - solid: 배경 채움 마커(이름표 라벨, P 원형, 주차권 카드)에 사용
- * - light: 옅은 배경 + 테두리 마커(공영 P)에 사용
+ * 파란색의 보색(레드/코럴)을 라이트 톤으로 가져가 부드럽게 어우러지게.
  */
 function getMarkerPalette(isOn: boolean, isFavorite: boolean) {
   if (isOn) {
@@ -37,26 +36,37 @@ function getMarkerPalette(isOn: boolean, isFavorite: boolean) {
   }
   if (isFavorite) {
     return {
-      solidBg: '#FF3B5C',
-      solidBorder: '#E0233F',
-      lightBg: '#FFE3E8',
-      lightBorder: '#FF3B5C',
-      lightText: '#B81E33',
-      labelBg: '#FF3B5C',
+      solidBg: '#FF6B7A', // light coral red — 핑크보다 빨강 쪽
+      solidBorder: '#E54A5C',
+      lightBg: '#FFD9DD',
+      lightBorder: '#FF6B7A',
+      lightText: '#B82838',
+      labelBg: '#FF6B7A',
       labelText: '#FFFFFF'
     }
   }
-  return null // 기본 클래스 그대로 사용
+  return null
 }
+
+function favoriteShadow(baseShadow: string, _isFavorite: boolean): string {
+  return baseShadow
+}
+
+const SHADOW_CIRCLE = '0 1px 3px rgba(0,0,0,0.25)'
+const SHADOW_CARD = '0 2px 6px rgba(0,0,0,0.2)'
+const SHADOW_CARD_DISABLED = '0 2px 4px rgba(0,0,0,0.12)'
 
 function ParkingCircle({ isOn, isFavorite }: { isOn: boolean; isFavorite: boolean }) {
   const palette = getMarkerPalette(isOn, isFavorite)
   return (
     <div
-      className={`flex h-[28px] w-[28px] items-center justify-center rounded-full border-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.25)] ${
+      className={`flex h-[28px] w-[28px] items-center justify-center rounded-full border-[2px] ${
         palette ? '' : 'border-[#0088E6] bg-[#0099FF]'
       }`}
-      style={palette ? { borderColor: palette.solidBorder, backgroundColor: palette.solidBg } : undefined}
+      style={{
+        boxShadow: favoriteShadow(SHADOW_CIRCLE, isFavorite),
+        ...(palette ? { borderColor: palette.solidBorder, backgroundColor: palette.solidBg } : {})
+      }}
     >
       <span className="text-[13px] leading-none font-bold text-white">P</span>
     </div>
@@ -70,10 +80,13 @@ function NormalPublicPOI({ label, isOn, isFavorite }: { label: string; isOn: boo
     <PoiWrapper>
       <div className="flex flex-col items-center">
         <div
-          className={`flex h-[28px] w-[28px] items-center justify-center rounded-full border-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.25)] ${
+          className={`flex h-[28px] w-[28px] items-center justify-center rounded-full border-[2px] ${
             palette ? '' : 'border-primary bg-primary-light'
           }`}
-          style={palette ? { borderColor: palette.lightBorder, backgroundColor: palette.lightBg } : undefined}
+          style={{
+            boxShadow: favoriteShadow(SHADOW_CIRCLE, isFavorite),
+            ...(palette ? { borderColor: palette.lightBorder, backgroundColor: palette.lightBg } : {})
+          }}
         >
           <span
             className={`text-[13px] leading-none font-bold ${palette ? '' : 'text-primary-dark'}`}
@@ -122,16 +135,19 @@ function NormalPartnerPOI({ label, isOn, isFavorite }: { label: string; isOn: bo
 // ── SHARE - 흰 배경 + primary border + 중앙 'S' ──
 function NormalSharePOI({ label, isOn, isFavorite }: { label: string; isOn: boolean; isFavorite: boolean }) {
   const palette = getMarkerPalette(isOn, isFavorite)
-  // share는 흰 배경 + 컬러 보더 + 컬러 'S' (선택 시만 채워진 어두운 배경 + 흰 'S')
+  // share는 흰 배경 유지 + 컬러 보더/글자만 변경 (선택 시만 채워진 어두운 배경)
   const isFilled = isOn
   return (
     <PoiWrapper>
       <div className="flex flex-col items-center">
         <div
-          className={`flex h-[28px] w-[28px] items-center justify-center rounded-full border-[2px] shadow-[0_1px_3px_rgba(0,0,0,0.25)] ${
+          className={`flex h-[28px] w-[28px] items-center justify-center rounded-full border-[2px] ${
             isFilled ? 'border-[#163D56] bg-[#224D6A]' : palette ? 'bg-white' : 'border-primary bg-white'
           }`}
-          style={!isFilled && palette ? { borderColor: palette.solidBorder } : undefined}
+          style={{
+            boxShadow: favoriteShadow(SHADOW_CIRCLE, isFavorite),
+            ...(!isFilled && palette ? { borderColor: palette.solidBorder } : {})
+          }}
         >
           <span
             className={`text-[13px] leading-none font-bold ${isFilled ? 'text-white' : palette ? '' : 'text-primary'}`}
@@ -172,10 +188,11 @@ function PrimaryTicketPOI({
     <PoiWrapper>
       <div className="relative z-[13] flex flex-col items-center">
         <div
-          className={`rounded-[8px] border-[1.5px] shadow-[0_2px_6px_rgba(0,0,0,0.2)] ${
-            palette ? '' : 'border-[#0088E6] bg-[#0099FF]'
-          }`}
-          style={palette ? { borderColor: palette.solidBorder, backgroundColor: palette.solidBg } : undefined}
+          className={`rounded-[8px] border-[1.5px] ${palette ? '' : 'border-[#0088E6] bg-[#0099FF]'}`}
+          style={{
+            boxShadow: favoriteShadow(SHADOW_CARD, isFavorite),
+            ...(palette ? { borderColor: palette.solidBorder, backgroundColor: palette.solidBg } : {})
+          }}
         >
           <div className="flex min-w-[72px] flex-col items-center px-[10px] pt-[5px] pb-[6px]">
             <div className="text-[10px] leading-[14px] font-medium whitespace-nowrap text-white/80">{name}</div>
@@ -213,10 +230,11 @@ function PrimaryTicketDisabledPOI({
     <PoiWrapper>
       <div className="relative z-[11] flex flex-col items-center">
         <div
-          className={`rounded-[8px] border-[1.5px] shadow-[0_2px_4px_rgba(0,0,0,0.12)] ${
-            palette ? '' : 'border-[#8D9DAD] bg-[#B8C3D0]'
-          }`}
-          style={palette ? { borderColor: palette.solidBorder, backgroundColor: palette.solidBg } : undefined}
+          className={`rounded-[8px] border-[1.5px] ${palette ? '' : 'border-[#8D9DAD] bg-[#B8C3D0]'}`}
+          style={{
+            boxShadow: favoriteShadow(SHADOW_CARD_DISABLED, isFavorite),
+            ...(palette ? { borderColor: palette.solidBorder, backgroundColor: palette.solidBg } : {})
+          }}
         >
           <div className="flex min-w-[72px] flex-col items-center px-[10px] pt-[5px] pb-[6px]">
             <div className="text-[10px] leading-[14px] font-medium whitespace-nowrap text-white/70">{name}</div>
