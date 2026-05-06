@@ -5,10 +5,6 @@ import { useEffect, useMemo, useState } from 'react'
 
 import apiClient from '@/shared/lib/apiClient'
 
-import type { PinV2Pin, PinV2PrimaryTicket, PinsGroupV2 } from '@/shared/types/map'
-import { PinV2Type } from '@/shared/types/map'
-import type { ParkingLotDetail } from '@/shared/types/parking'
-
 export interface RecommendParking {
   seq: number
   name: string
@@ -18,6 +14,27 @@ export interface RecommendParking {
   qty: number | null
   photos: string[]
   tickets: { name: string; price: number }[]
+}
+
+interface AvailableTicket {
+  seq: number
+  name: string
+  price: number
+  usagePeriodLabel: string
+}
+
+interface AvailableTicketsParkingLot {
+  seq: number
+  name: string
+  coordinate: { latitude: number; longitude: number }
+  qty: number
+  images: { url: string; width: number; height: number }[]
+  tickets: AvailableTicket[]
+}
+
+interface AvailableTicketsGeohashGroup {
+  geohash: string
+  parkingLots: AvailableTicketsParkingLot[]
 }
 
 interface UseRecommendParkingViewModelParams {
@@ -44,68 +61,40 @@ export function useRecommendParkingViewModel({ seq, lat, lng }: UseRecommendPark
 
     const load = async () => {
       try {
-        // 시간 필터 기본값 조회
-        const { data: tfData } = await apiClient.get<{
-          data: { defaults: { durationId: string; date: string } }
-        }>('/ticket/time-filter-options')
-        const defaults = tfData.data.defaults
-
-        // 주변 핀 조회
-        const { data: pinsData } = await apiClient.get<{ data: PinsGroupV2[] }>('/poi/pins', {
-          params: { geohash: geohashes, durationId: defaults.durationId, parkingDate: defaults.date },
-          headers: { 'modu-api-version': '2' }
+        const { data } = await apiClient.get<{ data: AvailableTicketsGeohashGroup[] }>('/poi/available-tickets', {
+          params: { geohash: geohashes }
         })
 
         if (cancelled) return
 
-        const groups: PinsGroupV2[] = pinsData.data ?? []
+        const groups: AvailableTicketsGeohashGroup[] = data.data ?? []
 
-        // PARTNER만, 현재 주차장 제외, 구매 가능 티켓 있는 것만
-        const partners = groups.flatMap((g) =>
-          g.pins.filter(
-            (pin) => pin.type === PinV2Type.PARTNER && pin.parkingLot.seq !== seq && getBuyableTickets(pin).length > 0
-          )
-        )
+        // 현재 주차장 제외 — PARTNER/구매가능 필터는 BE에서 처리됨
+        const candidates = groups.flatMap((g) => g.parkingLots ?? []).filter((pl) => pl.seq !== seq)
 
-        // 거리 계산 + 정렬 → 상위 3개
-        const sorted = partners
-          .map((pin) => ({
-            pin,
-            distance: Math.round(calcDistance(lat, lng, pin.parkingLot.latitude, pin.parkingLot.longitude))
+        // 거리 계산 → 오름차순 정렬 → 상위 3개
+        const sorted = candidates
+          .map((pl) => ({
+            pl,
+            distance: Math.round(calcDistance(lat, lng, pl.coordinate.latitude, pl.coordinate.longitude))
           }))
           .sort((a, b) => a.distance - b.distance)
           .slice(0, 3)
 
         if (cancelled) return
 
-        // 상위 3개 주차장 상세 조회 (사진, 면수)
-        const details = await Promise.all(
-          sorted.map(({ pin }) =>
-            apiClient
-              .get<{ data: ParkingLotDetail }>(`/poi/pins/P/${pin.parkingLot.seq}`)
-              .then((r) => r.data.data)
-              .catch(() => null)
-          )
-        )
-
-        if (cancelled) return
-
-        const result: RecommendParking[] = sorted.map(({ pin, distance }, i) => {
-          const detail = details[i]
-          const tickets = getBuyableTickets(pin)
+        const result: RecommendParking[] = sorted.map(({ pl, distance }) => ({
+          seq: pl.seq,
+          name: pl.name,
+          lat: pl.coordinate.latitude,
+          lng: pl.coordinate.longitude,
+          distance,
+          qty: pl.qty ?? null,
+          photos: (pl.images ?? []).map((img) => img.url),
+          tickets: [...(pl.tickets ?? [])]
             .sort((a, b) => a.price - b.price)
             .map((t) => ({ name: t.name, price: t.price }))
-          return {
-            seq: pin.parkingLot.seq,
-            name: pin.parkingLot.name,
-            lat: pin.parkingLot.latitude,
-            lng: pin.parkingLot.longitude,
-            distance,
-            qty: detail?.basic.qty ?? null,
-            photos: detail?.basic.photos.map((p) => p.file_name) ?? [],
-            tickets
-          }
-        })
+        }))
 
         setItems(result)
       } catch {
@@ -122,18 +111,6 @@ export function useRecommendParkingViewModel({ seq, lat, lng }: UseRecommendPark
   }, [seq, lat, lng, geohashes])
 
   return { items, isLoaded }
-}
-
-function getBuyableTickets(pin: PinV2Pin): PinV2PrimaryTicket[] {
-  const all = [...(pin.tickets ?? []), ...(pin.primaryTicket ? [pin.primaryTicket] : [])]
-  const seen = new Set<string>()
-  return all.filter((t) => {
-    if (!t.canBuy) return false
-    const key = `${t.name}|${t.price}`
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
 }
 
 /** Haversine distance (meters) */
