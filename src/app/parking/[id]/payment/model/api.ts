@@ -1,5 +1,3 @@
-import axios from 'axios'
-
 import apiClient from '@/shared/lib/apiClient'
 
 import type {
@@ -17,7 +15,7 @@ import type {
 } from '@/shared/types/purchase'
 
 export async function fetchDailyAbleTime(seq: string | number, parkingDate: string): Promise<AbleTime[]> {
-  const { data } = await axios.get<{ data: { ableTimes: AbleTime[] } }>(`/ticket/${seq}/daily-able-time`, {
+  const { data } = await apiClient.get<{ data: { ableTimes: AbleTime[] } }>(`/ticket/${seq}/daily-able-time`, {
     params: { parkingDate }
   })
   return data.data.ableTimes
