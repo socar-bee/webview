@@ -1,8 +1,9 @@
 'use client'
 
-import axios from 'axios'
 import ngeohash from 'ngeohash'
 import { useEffect, useMemo, useState } from 'react'
+
+import apiClient from '@/shared/lib/apiClient'
 
 import type { PinV2Pin, PinV2PrimaryTicket, PinsGroupV2 } from '@/shared/types/map'
 import { PinV2Type } from '@/shared/types/map'
@@ -44,13 +45,13 @@ export function useRecommendParkingViewModel({ seq, lat, lng }: UseRecommendPark
     const load = async () => {
       try {
         // 시간 필터 기본값 조회
-        const { data: tfData } = await axios.get<{
+        const { data: tfData } = await apiClient.get<{
           data: { defaults: { durationId: string; date: string } }
         }>('/ticket/time-filter-options')
         const defaults = tfData.data.defaults
 
         // 주변 핀 조회
-        const { data: pinsData } = await axios.get<{ data: PinsGroupV2[] }>('/poi/pins', {
+        const { data: pinsData } = await apiClient.get<{ data: PinsGroupV2[] }>('/poi/pins', {
           params: { geohash: geohashes, durationId: defaults.durationId, parkingDate: defaults.date },
           headers: { 'modu-api-version': '2' }
         })
@@ -80,7 +81,7 @@ export function useRecommendParkingViewModel({ seq, lat, lng }: UseRecommendPark
         // 상위 3개 주차장 상세 조회 (사진, 면수)
         const details = await Promise.all(
           sorted.map(({ pin }) =>
-            axios
+            apiClient
               .get<{ data: ParkingLotDetail }>(`/poi/pins/P/${pin.parkingLot.seq}`)
               .then((r) => r.data.data)
               .catch(() => null)
