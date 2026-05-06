@@ -10,14 +10,10 @@ import { useFavorites } from '@/shared/hooks/useFavorites'
 
 import type { RecommendParking } from '@/app/parking/[id]/viewmodel'
 
-import type { ParkingLotTimeContent, ParkingLotType } from '@/shared/types/parking'
+import type { ParkingLotTimeContent, ParkingLotType, TicketListItem } from '@/shared/types/parking'
+import { CategorySeq, CouponTypeGroup } from '@/shared/types/parking'
 
-import {
-  DETAIL_TABS,
-  type DetailTabKey,
-  useParkingDetailViewModel,
-  useRecommendParkingViewModel
-} from '@/app/parking/[id]/viewmodel'
+import { useParkingDetailViewModel, useRecommendParkingViewModel } from '@/app/parking/[id]/viewmodel'
 
 export interface ParkingDetailData {
   seq: number
@@ -32,9 +28,15 @@ interface ParkingDetailSheetProps {
   onSnapChange: (s: SheetSnap) => void
   onClose: () => void
   data: ParkingDetailData | null
-  /** detail 로드 완료 시 주차장 좌표를 부모에 전달 (지도 이동에 사용) */
   onLocationKnown?: (lat: number, lng: number) => void
 }
+
+type SheetTab = 'info' | 'recommend' | 'nearby'
+const SHEET_TABS: { key: SheetTab; label: string }[] = [
+  { key: 'info', label: '정보' },
+  { key: 'recommend', label: '추천' },
+  { key: 'nearby', label: '주변' }
+]
 
 export default function ParkingDetailSheet({
   isOpen,
@@ -46,19 +48,18 @@ export default function ParkingDetailSheet({
 }: ParkingDetailSheetProps) {
   const vm = useParkingDetailViewModel(data?.seq ?? null, data?.parkingType)
   const tabsRef = useRef<HTMLDivElement>(null)
-  const ticketsSectionRef = useRef<HTMLDivElement>(null)
   const infoSectionRef = useRef<HTMLDivElement>(null)
   const recommendSectionRef = useRef<HTMLDivElement>(null)
   const nearbySectionRef = useRef<HTMLDivElement>(null)
+  const heroSliderRef = useRef<HTMLDivElement>(null)
   const isScrollingByClickRef = useRef(false)
 
-  const [activeSection, setActiveSection] = useState<DetailTabKey>('tickets')
-  // PeekBar(in-body)가 스크롤되어 사라진 후에만 NavigationBar에 주차장명 표출
+  const [activeSection, setActiveSection] = useState<SheetTab>('info')
   const [showNavTitle, setShowNavTitle] = useState(false)
+  const [slideIndex, setSlideIndex] = useState(0)
 
-  const sectionRefs = useMemo<Record<DetailTabKey, React.RefObject<HTMLDivElement | null>>>(
+  const sectionRefs = useMemo<Record<SheetTab, React.RefObject<HTMLDivElement | null>>>(
     () => ({
-      tickets: ticketsSectionRef,
       info: infoSectionRef,
       recommend: recommendSectionRef,
       nearby: nearbySectionRef
@@ -78,7 +79,7 @@ export default function ParkingDetailSheet({
   }, [])
 
   const scrollToSection = useCallback(
-    (key: DetailTabKey) => {
+    (key: SheetTab) => {
       const container = getScrollContainer()
       const target = sectionRefs[key].current
       if (!container || !target) return
@@ -88,7 +89,6 @@ export default function ParkingDetailSheet({
       setActiveSection(key)
       container.scrollTo({ top: target.offsetTop - tabsHeight, behavior: 'smooth' })
 
-      // 스크롤 종료 감지 후 flag 해제 (스크롤 중 IntersectionObserver가 activeSection을 덮어쓰지 않게)
       let timer: ReturnType<typeof setTimeout>
       const onScroll = () => {
         clearTimeout(timer)
@@ -102,7 +102,7 @@ export default function ParkingDetailSheet({
     [getScrollContainer, sectionRefs]
   )
 
-  // 섹션 스크롤 스파이 — full 상태일 때만 활성화
+  // Scrollspy
   useEffect(() => {
     if (!isOpen) return
     const container = getScrollContainer()
@@ -110,16 +110,16 @@ export default function ParkingDetailSheet({
     if (!container || !tabsEl) return
 
     const tabsHeight = tabsEl.offsetHeight
-    const entries = (Object.keys(sectionRefs) as DetailTabKey[])
+    const entries = (Object.keys(sectionRefs) as SheetTab[])
       .map((key) => ({ key, el: sectionRefs[key].current }))
-      .filter((e): e is { key: DetailTabKey; el: HTMLDivElement } => e.el !== null)
+      .filter((e): e is { key: SheetTab; el: HTMLDivElement } => e.el !== null)
 
     const observer = new IntersectionObserver(
       (obs) => {
         if (isScrollingByClickRef.current) return
         obs.forEach((entry) => {
           if (entry.isIntersecting) {
-            const key = entry.target.getAttribute('data-section') as DetailTabKey | null
+            const key = entry.target.getAttribute('data-section') as SheetTab | null
             if (key) setActiveSection(key)
           }
         })
@@ -135,56 +135,79 @@ export default function ParkingDetailSheet({
     return () => observer.disconnect()
   }, [isOpen, getScrollContainer, sectionRefs])
 
-  // 새 주차장으로 바뀌면 스크롤 초기화 + 기본 섹션으로 리셋
+  // 새 주차장 → 초기화
   useEffect(() => {
     const container = getScrollContainer()
     if (container) container.scrollTop = 0
-    setActiveSection('tickets')
+    setActiveSection('info')
+    setSlideIndex(0)
   }, [data?.seq, getScrollContainer])
 
-  // 시트가 닫히거나 full 이외의 snap이면 NavigationBar 타이틀 숨김 + 스크롤 초기화
-  // (재오픈 시 stale scroll로 NavBar 타이틀이 노출되는 문제 방지)
+  // snap 변경 시 NavBar 타이틀 리셋
   useEffect(() => {
     if (!isOpen || snap !== 'full') {
       setShowNavTitle(false)
       const container = getScrollContainer()
       if (container) container.scrollTop = 0
-      return
     }
   }, [isOpen, snap, getScrollContainer])
 
-  // full 상태에서 스크롤 위치에 따라 NavigationBar 타이틀 토글
+  // Full 상태 스크롤 → NavBar 타이틀 토글 (히어로 높이 기준)
   useEffect(() => {
     if (!isOpen || snap !== 'full') return
     const container = getScrollContainer()
     if (!container) return
-
-    // PeekBar(in-body) 높이만큼 스크롤되면 NavigationBar에 타이틀 노출
-    const TITLE_REVEAL_THRESHOLD = 64
-    const update = () => setShowNavTitle(container.scrollTop > TITLE_REVEAL_THRESHOLD)
+    const THRESHOLD = 220
+    const update = () => setShowNavTitle(container.scrollTop > THRESHOLD)
     update()
     container.addEventListener('scroll', update, { passive: true })
     return () => container.removeEventListener('scroll', update)
   }, [isOpen, snap, getScrollContainer])
 
+  // Hero slider counter
+  useEffect(() => {
+    const slider = heroSliderRef.current
+    if (!slider) return
+    const onScroll = () => setSlideIndex(Math.round(slider.scrollLeft / slider.offsetWidth))
+    slider.addEventListener('scroll', onScroll, { passive: true })
+    return () => slider.removeEventListener('scroll', onScroll)
+  }, [data?.seq])
+
+  // 좌표 전달
   const lat = vm.detail?.basic.latitude
   const lng = vm.detail?.basic.longitude
   useEffect(() => {
     if (lat != null && lng != null) onLocationKnown?.(lat, lng)
-    // onLocationKnown은 useCallback으로 안정화되어 있으므로 deps 안전
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng])
 
   const { favorites, toggle: toggleFavorite } = useFavorites()
 
+  const sortedTickets = useMemo(
+    () =>
+      [...vm.tickets].sort((a, b) => {
+        const ad = a.isSoldOut || !a.isOpen
+        const bd = b.isSoldOut || !b.isOpen
+        if (ad !== bd) return ad ? 1 : -1
+        return a.price - b.price
+      }),
+    [vm.tickets]
+  )
+
   if (!data) return null
 
   const detail = vm.detail
-  const capacity = detail?.basic.qty
-  const typeLabel = detail?.basic.partnerStatus ? '제휴' : '공영'
   const displayName = detail?.basic.name ?? data.name
-
+  const isPartner = detail?.basic.partnerStatus ?? data.isPartner ?? false
+  const capacity = detail?.basic.qty ?? null
   const isFavorited = favorites.some((f) => f.seq === data.seq)
+
+  const getCategoryLabel = () => {
+    if (isPartner) return '제휴'
+    if (detail?.basic.category === CategorySeq.PUBLIC) return '공영'
+    return '민영'
+  }
+
   const handleToggleFavorite = () => {
     toggleFavorite({
       seq: data.seq,
@@ -193,6 +216,15 @@ export default function ParkingDetailSheet({
       image: detail?.basic.photos?.[0]?.file_name,
       isPartner: data.isPartner ?? !!detail?.basic.partnerStatus
     })
+  }
+
+  const heroImages = detail?.basic.photos ?? []
+  const moduComment = detail?.basic.moduComment
+
+  const openNavigation = () => {
+    if (!detail) return
+    const { latitude: lt, longitude: ln, name } = detail.basic
+    window.location.href = `nmap://route/car?dlat=${lt}&dlng=${ln}&dname=${encodeURIComponent(name)}&appname=kr.modu.app`
   }
 
   return (
@@ -205,13 +237,11 @@ export default function ParkingDetailSheet({
       halfRatio={0.45}
       navigationBar={<NavigationBar title={displayName} showTitle={showNavTitle} onBack={onClose} />}
       peek={
-        // full 상태에서는 body 안 상단에 PeekBar를 배치해 스크롤과 함께 사라지게 함 (Tab bar가 NavBar 바로 아래로 sticky).
-        // peek/half 에서는 드래그 핸들 영역에 고정 노출.
         snap !== 'full' ? (
           <PeekBar
             name={displayName}
-            typeLabel={detail ? typeLabel : data.isPartner ? '제휴' : null}
-            capacity={capacity ?? null}
+            typeLabel={detail ? getCategoryLabel() : data.isPartner ? '제휴' : null}
+            capacity={capacity}
             isFavorited={isFavorited}
             onToggleFavorite={handleToggleFavorite}
           />
@@ -230,55 +260,130 @@ export default function ParkingDetailSheet({
       }
     >
       <div className="flex min-h-full flex-col">
-        {/* full 상태에서만 body 안 최상단에 PeekBar 배치 → 스크롤하면 사라지고 Tab bar가 NavBar 아래로 sticky */}
-        {snap === 'full' && (
-          <PeekBar
-            name={displayName}
-            typeLabel={detail ? typeLabel : data.isPartner ? '제휴' : null}
-            capacity={capacity ?? null}
-            isFavorited={isFavorited}
-            onToggleFavorite={handleToggleFavorite}
-          />
-        )}
-
-        {/* 사진 갤러리 */}
-        {detail?.basic.photos && detail.basic.photos.length > 0 && (
-          <div className="scrollbar-hide flex gap-3 overflow-x-auto px-4 py-4">
-            {detail.basic.photos.map((photo, i) => (
-              <motion.div
-                key={i}
-                className="relative h-40 w-40 shrink-0 overflow-hidden rounded-lg"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.08, duration: 0.3 }}
+        {/* ── Hero Image Slider ── */}
+        <div className="bg-bg-soft relative h-[260px] w-full overflow-hidden">
+          {heroImages.length === 0 ? (
+            <Image src="/images/img_skeleton.png" alt="" fill sizes="480px" className="object-cover" />
+          ) : (
+            <>
+              <div
+                ref={heroSliderRef}
+                className="scrollbar-hide flex h-full w-full overflow-x-scroll"
+                style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
               >
-                <Image
-                  src={photo.file_name}
+                {heroImages.map((photo, i) => (
+                  <div
+                    key={i}
+                    className="relative h-full w-full shrink-0"
+                    style={{ scrollSnapAlign: 'start' } as React.CSSProperties}
+                  >
+                    <Image
+                      src={photo.file_name}
+                      alt={`${displayName} 이미지 ${i + 1}`}
+                      fill
+                      sizes="480px"
+                      className="object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+              {heroImages.length > 1 && (
+                <div className="pointer-events-none absolute right-3 bottom-3 flex h-6 min-w-[43px] items-center justify-center rounded-full bg-black/50 px-2">
+                  <span className="text-[11px] font-medium text-white">
+                    {slideIndex + 1}/{heroImages.length}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* ── Title section (full state) / PeekBar duplicate (peek/half via peek prop) ── */}
+        <div className="bg-bg-white px-4 pt-5 pb-4">
+          <div className="flex items-start justify-between">
+            <div className="min-w-0 pr-3">
+              <h2 className="text-text-strong text-[18px] leading-snug font-bold">{displayName}</h2>
+              <div className="text-text-sub mt-1 flex items-center gap-1 text-[13px]">
+                <span>{getCategoryLabel()}</span>
+                {capacity !== null && (
+                  <>
+                    <span className="text-text-disabled">·</span>
+                    <span>{capacity.toLocaleString()}면</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleToggleFavorite()
+                }}
+                aria-label={isFavorited ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+                className="flex cursor-pointer items-center transition-transform active:scale-90"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/icn_favorite.webp"
                   alt=""
-                  fill
-                  sizes="160px"
-                  className="object-cover"
-                  onError={(e) => {
-                    const wrapper = (e.target as HTMLElement).closest('.relative') as HTMLElement | null
-                    if (wrapper) wrapper.style.display = 'none'
-                    const gallery = wrapper?.parentElement
-                    if (
-                      gallery &&
-                      Array.from(gallery.children).every((c) => (c as HTMLElement).style.display === 'none')
-                    ) {
-                      gallery.style.display = 'none'
-                    }
-                  }}
+                  width={22}
+                  height={22}
+                  draggable={false}
+                  className={`size-[22px] object-contain transition-[filter,opacity] ${isFavorited ? '' : 'opacity-40 grayscale'}`}
                 />
-              </motion.div>
-            ))}
+              </button>
+              <button
+                type="button"
+                aria-label="길찾기"
+                onClick={openNavigation}
+                className="bg-primary text-static-white flex size-[46px] shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-[8px]"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M11.8333 4.50079C11.8333 4.07135 12.339 3.84137 12.6624 4.12384L19.4036 10.0223C19.6311 10.2215 19.6311 10.576 19.4036 10.7752L12.6624 16.6727C12.3391 16.9555 11.8333 16.7263 11.8333 16.2967V12.3983H10.3333C8.95268 12.3983 7.83349 13.5177 7.83325 14.8983V19.3983H3.83325V14.3983C3.83349 11.0847 6.51969 8.39826 9.83325 8.39826H11.8333V4.50079Z"
+                    fill="white"
+                  />
+                </svg>
+                <span className="text-[9px] font-medium tracking-[0.3px]">길찾기</span>
+              </button>
+            </div>
+          </div>
+
+          {/* CommentSection */}
+          {isPartner && moduComment ? (
+            <div className="mt-3.5 rounded-md bg-sky-50 px-5 py-2 text-center">
+              <p className="text-text-strong text-[13px]">{moduComment}</p>
+            </div>
+          ) : !isPartner || sortedTickets.length === 0 ? (
+            <div className="bg-bg-soft mt-3.5 rounded-md px-5 py-2 text-center">
+              <p className="text-text-sub text-[13px]">아직 주차권을 판매하지 않는 현장입니다.</p>
+            </div>
+          ) : null}
+        </div>
+
+        {/* ── Ticket stub cards ── */}
+        {isPartner && sortedTickets.length > 0 && (
+          <div className="bg-bg-white pb-5 pl-4">
+            <div className="scrollbar-hide flex gap-2 overflow-x-auto pr-4">
+              {sortedTickets.map((ticket) => (
+                <TicketStubCard
+                  key={ticket.couponSeq}
+                  ticket={ticket}
+                  onClick={() => vm.goToPayment(ticket.couponSeq)}
+                />
+              ))}
+              <div className="w-2 shrink-0" />
+            </div>
           </div>
         )}
 
-        {/* Tabs — sticky 상단. 클릭 시 해당 섹션으로 스크롤 */}
+        {/* ── Section divider ── */}
+        <div className="bg-bg-weak h-2.5" />
+
+        {/* ── Scrollspy tabs ── */}
         <div ref={tabsRef} className="border-stroke-soft bg-bg-white sticky top-0 z-10 border-b">
           <div className="flex">
-            {DETAIL_TABS.map((tab) => {
+            {SHEET_TABS.map((tab) => {
               const isActive = tab.key === activeSection
               return (
                 <button
@@ -298,11 +403,7 @@ export default function ParkingDetailSheet({
           </div>
         </div>
 
-        {/* 단일 스크롤 컨테이너 — 모든 섹션을 세로로 나열. 탭은 sticky, 스크롤에 따라 activeSection 업데이트 */}
-        <div ref={ticketsSectionRef} className="bg-bg-white">
-          <TicketsTab tickets={vm.tickets} isLoading={vm.isLoading} onBuy={vm.goToPayment} />
-        </div>
-        <div className="bg-bg-weak h-2.5" />
+        {/* ── Info section ── */}
         <div ref={infoSectionRef} className="bg-bg-white">
           <InfoTab
             detail={detail}
@@ -312,15 +413,18 @@ export default function ParkingDetailSheet({
           />
         </div>
         <div className="bg-bg-weak h-2.5" />
+
+        {/* ── Recommend section ── */}
         <div ref={recommendSectionRef} className="bg-bg-white">
           <RecommendTab seq={data.seq} lat={detail?.basic.latitude} lng={detail?.basic.longitude} />
         </div>
         <div className="bg-bg-weak h-2.5" />
+
+        {/* ── Nearby section ── */}
         <div ref={nearbySectionRef} className="bg-bg-white">
           <NearbyTab detail={detail} />
         </div>
 
-        {/* Footer */}
         <Footer />
       </div>
     </AnimationSheet>
@@ -349,7 +453,7 @@ function NavigationBar({ title, showTitle, onBack }: { title: string; showTitle:
   )
 }
 
-/* ─── PeekBar ─── */
+/* ─── PeekBar (peek/half 상태용) ─── */
 function PeekBar({
   name,
   typeLabel,
@@ -382,7 +486,6 @@ function PeekBar({
               onToggleFavorite()
             }}
             aria-label={isFavorited ? '즐겨찾기 해제' : '즐겨찾기 추가'}
-            aria-pressed={isFavorited}
             className="flex shrink-0 cursor-pointer items-center transition-transform active:scale-90"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -392,9 +495,7 @@ function PeekBar({
               width={20}
               height={20}
               draggable={false}
-              className={`size-5 object-contain transition-[filter,opacity] ${
-                isFavorited ? '' : 'opacity-50 grayscale'
-              }`}
+              className={`size-5 object-contain transition-[filter,opacity] ${isFavorited ? '' : 'opacity-50 grayscale'}`}
             />
           </button>
         </div>
@@ -415,79 +516,59 @@ function PeekBar({
   )
 }
 
-/* ─── TicketsTab ─── */
-function TicketsTab({
-  tickets,
-  isLoading,
-  onBuy
-}: {
-  tickets: ReturnType<typeof useParkingDetailViewModel>['tickets']
-  isLoading: boolean
-  onBuy: (couponSeq: number) => void
-}) {
-  return (
-    <div className="flex flex-col gap-6 p-6">
-      {/* 섹션 헤더 */}
-      <h2 className="text-text-strong text-[20px] font-semibold tracking-[-0.3px]">주차권</h2>
+/* ─── TicketStubCard ─── */
+function TicketStubCard({ ticket, onClick }: { ticket: TicketListItem; onClick: () => void }) {
+  const isDisabled = ticket.isSoldOut || !ticket.isOpen
 
-      {/* 티켓 목록 */}
-      {isLoading ? (
-        <div className="flex flex-col gap-2.5">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-bg-soft h-[86px] animate-pulse rounded-lg" />
-          ))}
+  const description = (() => {
+    if (ticket.isSoldOut) return '매진'
+    if (!ticket.isOpen) return ticket.nextTimeLabel
+    if (Number(ticket.couponTypeGroup) === CouponTypeGroup.MONTHLY) return ticket.usingDateLabel
+    return `${ticket.usingDateLabel} ${ticket.usingTimeLabel}`
+  })()
+
+  return (
+    <div
+      className={`relative w-[172px] shrink-0 cursor-pointer ${isDisabled ? 'opacity-50' : ''}`}
+      onClick={() => !isDisabled && onClick()}
+    >
+      <div
+        className={`relative flex flex-col rounded-md border ${
+          isDisabled ? 'border-stroke-soft bg-bg-soft' : 'border-primary/25 bg-primary/5'
+        }`}
+      >
+        {/* Left notch */}
+        <div
+          className={`bg-bg-white absolute top-1/2 -left-px h-3 w-1.5 -translate-y-1/2 rounded-r-full border-y border-r ${
+            isDisabled ? 'border-stroke-soft' : 'border-primary/25'
+          }`}
+        />
+        {/* Right notch */}
+        <div
+          className={`bg-bg-white absolute top-1/2 -right-px h-3 w-1.5 -translate-y-1/2 rounded-l-full border-y border-l ${
+            isDisabled ? 'border-stroke-soft' : 'border-primary/25'
+          }`}
+        />
+
+        <div className="flex items-center justify-between gap-2 px-3 py-3">
+          <span
+            className={`truncate text-[13px] font-medium ${isDisabled ? 'text-text-disabled' : 'text-text-strong'}`}
+          >
+            {ticket.couponName}
+          </span>
+          <span className={`shrink-0 text-[15px] font-bold ${isDisabled ? 'text-text-disabled' : 'text-primary'}`}>
+            {ticket.price.toLocaleString()}원
+          </span>
         </div>
-      ) : (
-        <div className="flex flex-col gap-2.5">
-          {tickets.map((ticket) => {
-            const isDisabled = !ticket.isOpen || ticket.isSoldOut
-            return (
-              <div key={ticket.couponSeq} className="flex overflow-hidden rounded-lg">
-                <div className={`w-[9px] shrink-0 ${isDisabled ? 'bg-stroke-sub' : 'bg-primary'}`} />
-                <div
-                  className={`border-stroke-sub flex flex-1 items-center gap-3.5 rounded-tr-lg rounded-br-lg border-t border-r border-b px-4 py-2.5 ${
-                    isDisabled ? 'bg-bg-weak' : 'bg-bg-white'
-                  }`}
-                >
-                  <div className="flex flex-1 flex-col gap-0.5">
-                    <span
-                      className={`text-[14px] font-semibold ${isDisabled ? 'text-text-disabled' : 'text-text-strong'}`}
-                    >
-                      {ticket.couponName}
-                    </span>
-                    <span className={`text-[16px] font-bold ${isDisabled ? 'text-text-disabled' : 'text-text-strong'}`}>
-                      {ticket.price.toLocaleString()}원
-                    </span>
-                    <div className="flex items-center gap-1 text-[12px]">
-                      <span className={`font-semibold ${isDisabled ? 'text-text-disabled' : 'text-primary'}`}>
-                        {ticket.isSoldOut ? '매진' : ticket.isOpen ? '판매중' : ticket.nextTimeLabel}
-                      </span>
-                      <svg width="4" height="4" viewBox="0 0 4 4" fill="none">
-                        <circle cx="2" cy="2" r="2" fill={isDisabled ? '#D1D1D1' : '#A3A3A3'} />
-                      </svg>
-                      <span className={isDisabled ? 'text-text-disabled' : 'text-text-sub'}>
-                        {ticket.usingDateLabel}
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => !isDisabled && onBuy(ticket.couponSeq)}
-                    disabled={isDisabled}
-                    className={`shrink-0 text-[14px] font-bold ${
-                      isDisabled ? 'text-text-disabled cursor-default' : 'text-text-strong'
-                    }`}
-                  >
-                    구매하기
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-          {tickets.length === 0 && (
-            <p className="text-text-soft py-6 text-center text-[14px]">판매 중인 주차권이 없습니다.</p>
-          )}
+
+        <div className={`mx-2 border-t border-dashed ${isDisabled ? 'border-stroke-soft' : 'border-primary/25'}`} />
+
+        <div className="px-3 py-1.5">
+          <span className={`block truncate text-[11px] ${isDisabled ? 'text-text-disabled' : 'text-text-sub'}`}>
+            {description}
+          </span>
         </div>
-      )}
+      </div>
     </div>
   )
 }
@@ -504,7 +585,7 @@ function InfoTab({
   onCopyAddress: (addr: string) => void
   formatCurrentFee: (prices: Record<string, number>) => string | null
 }) {
-  if (isLoading || !detail) {
+  if (isLoading && !detail) {
     return (
       <div className="flex flex-col gap-4 p-6">
         {[1, 2, 3].map((i) => (
@@ -513,18 +594,20 @@ function InfoTab({
       </div>
     )
   }
+  if (!detail) return null
 
   const { basic, times, prices, modifyDate, openFree } = detail
   const currentFee = formatCurrentFee(basic.calcPrices)
+  const address = basic.newAddress || basic.address
+  const operationTime = openFree.operationTime?.replace(/익일\s*/g, '') ?? null
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      {/* 주차정보 헤더 */}
       <div className="flex items-center justify-between">
-        <h2 className="text-text-strong text-[20px] font-semibold tracking-[-0.3px]">주차정보</h2>
+        <h2 className="text-text-strong text-[18px] font-bold">주차 정보</h2>
         {modifyDate && (
           <span className="text-text-soft flex items-center gap-1 text-[12px]">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="9" stroke="#A3A3A3" strokeWidth="1.5" />
               <path d="M12 7v5l3 3" stroke="#A3A3A3" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
@@ -533,56 +616,54 @@ function InfoTab({
         )}
       </div>
 
-      {/* 기본 정보 행 */}
-      <div className="flex flex-col gap-2">
-        {openFree.operationTime && <InfoRow label="운영 시간" value={openFree.operationTime} />}
+      <div className="flex flex-col gap-2.5">
+        {operationTime && <InfoRow label="운영 시간" value={operationTime} />}
         {currentFee && <InfoRow label="현장 요금" value={currentFee} />}
-        <div className="flex items-center justify-between">
-          <span className="text-text-sub text-[16px]">주소</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-text-sub shrink-0 text-[15px]">주소</span>
           <button
-            className="flex items-center gap-1 text-right"
-            onClick={() => onCopyAddress(basic.newAddress || basic.address)}
+            className="flex min-w-0 cursor-pointer items-center gap-1 text-right"
+            onClick={() => onCopyAddress(address)}
           >
-            <span className="text-text-strong text-[16px]">{basic.newAddress || basic.address}</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <span className="text-text-strong truncate text-[15px]">{address}</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0">
               <rect x="9" y="9" width="11" height="11" rx="1.5" stroke="#A3A3A3" strokeWidth="1.5" />
               <path d="M5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h10a1 1 0 011 1v1" stroke="#A3A3A3" strokeWidth="1.5" />
             </svg>
           </button>
         </div>
+        {basic.phone && (
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-text-sub shrink-0 text-[15px]">주차장번호</span>
+            <a href={`tel:${basic.phone}`} className="text-primary text-[15px]">
+              {basic.phone}
+            </a>
+          </div>
+        )}
       </div>
 
-      {/* 로드뷰 보기 */}
-      <button className="border-stroke-sub text-text-sub flex h-[50px] w-full items-center justify-center rounded-md border text-[16px] font-semibold">
-        로드뷰 보기
-      </button>
-
-      {/* 요금 안내 */}
       {prices.map((section, i) => (
-        <InfoSection key={`fare-${i}`} icon="fare" title={section.title} contents={section.contents} />
+        <InfoCardSection key={`price-${i}`} icon="fare" title={section.title} contents={section.contents} />
       ))}
-
-      {/* 운영 시간 */}
       {times.map((section, i) => (
-        <InfoSection key={`time-${i}`} icon="clock" title={section.title} contents={section.contents} />
+        <InfoCardSection key={`time-${i}`} icon="clock" title={section.title} contents={section.contents} />
       ))}
 
-      {/* 추가 정보 */}
       {basic.options.length > 0 && (
-        <div className="border-stroke-soft flex flex-col gap-3 rounded-xl border p-[17px]">
+        <div className="border-stroke-soft flex flex-col gap-3 rounded-xl border p-4">
           <div className="flex items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path
                 d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
                 stroke="#A3A3A3"
                 strokeWidth="1.5"
               />
             </svg>
-            <span className="text-text-sub text-[16px] font-semibold">추가 정보</span>
+            <span className="text-text-sub text-[15px] font-semibold">추가 정보</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {basic.options.map((opt) => (
-              <span key={opt} className="bg-primary/10 text-primary rounded-full px-3 py-1 text-[14px] font-semibold">
+              <span key={opt} className="bg-primary/10 text-primary rounded-full px-3 py-1 text-[13px] font-medium">
                 {opt}
               </span>
             ))}
@@ -590,13 +671,12 @@ function InfoTab({
         </div>
       )}
 
-      {/* 경고 */}
-      <div className="flex items-start gap-3 rounded-xl bg-[#FFF9D6] p-4">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0">
+      <div className="flex items-start gap-3 rounded-xl bg-amber-50 p-4">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0">
           <path d="M12 2L2 20h20L12 2z" stroke="#C9A227" strokeWidth="1.5" />
           <path d="M12 9v5M12 16.5v.5" stroke="#C9A227" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
-        <p className="text-[12px] leading-[1.7] text-[#7A6D33]">
+        <p className="text-[12px] leading-relaxed text-[#7A6D33]">
           현장 정보와 일치하지 않아 발생한 피해는 모두의주차장이 책임을 지거나 보상하지 않습니다.
         </p>
       </div>
@@ -606,14 +686,14 @@ function InfoTab({
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-text-sub text-[16px]">{label}</span>
-      <span className="text-text-strong text-[16px]">{value}</span>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-text-sub shrink-0 text-[15px]">{label}</span>
+      <span className="text-text-strong text-right text-[15px]">{value}</span>
     </div>
   )
 }
 
-function InfoSection({
+function InfoCardSection({
   icon,
   title,
   contents
@@ -623,26 +703,26 @@ function InfoSection({
   contents: ParkingLotTimeContent['contents']
 }) {
   return (
-    <div className="border-stroke-soft flex flex-col gap-3 rounded-xl border p-[17px]">
+    <div className="border-stroke-soft flex flex-col gap-3 rounded-xl border p-4">
       <div className="flex items-center gap-2">
         {icon === 'fare' ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <rect x="2" y="6" width="20" height="14" rx="2" stroke="#A3A3A3" strokeWidth="1.5" />
             <path d="M2 10h20" stroke="#A3A3A3" strokeWidth="1.5" />
           </svg>
         ) : (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="9" stroke="#A3A3A3" strokeWidth="1.5" />
             <path d="M12 7v5l3 3" stroke="#A3A3A3" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         )}
-        <span className="text-text-sub text-[16px] font-semibold">{title}</span>
+        <span className="text-text-sub text-[15px] font-semibold">{title}</span>
       </div>
       <div className="flex flex-col gap-2">
         {contents.map((item, idx) => (
-          <div key={`${item.key}-${idx}`} className="flex items-center justify-between">
-            <span className="text-text-sub text-[14px]">{item.key}</span>
-            <span className="text-text-strong text-[14px]">{item.value}</span>
+          <div key={`${item.key}-${idx}`} className="flex items-center justify-between gap-3">
+            <span className="text-text-sub text-[13px]">{item.key}</span>
+            <span className="text-text-strong text-right text-[13px]">{item.value}</span>
           </div>
         ))}
       </div>
@@ -656,13 +736,13 @@ function RecommendTab({ seq, lat, lng }: { seq: number; lat?: number; lng?: numb
 
   return (
     <div className="flex flex-col gap-3 px-4 py-6">
-      <h2 className="text-text-strong text-[16px] leading-6 font-bold">추천 주차장</h2>
+      <h2 className="text-text-strong text-[18px] font-bold">추천 주차장</h2>
 
       {!isLoaded ? (
         <div className="scrollbar-hide flex gap-3 overflow-x-auto">
           {[1, 2, 3].map((i) => (
             <div key={i} className="w-[290px] shrink-0">
-              <div className="bg-bg-soft h-[180px] animate-pulse rounded-md" />
+              <div className="bg-bg-soft h-[180px] animate-pulse rounded-xl" />
               <div className="bg-bg-soft mt-3 h-5 w-3/4 animate-pulse rounded" />
               <div className="bg-bg-soft mt-2 h-4 w-1/2 animate-pulse rounded" />
             </div>
@@ -693,8 +773,7 @@ function RecommendCard({ item, index }: { item: RecommendParking; index: number 
       transition={{ delay: index * 0.1, duration: 0.35, ease: 'easeOut' }}
     >
       <Link href={`/p/${item.seq}`} className="flex flex-col gap-3">
-        {/* 사진 슬라이더 */}
-        <div className="h-[180px] w-full overflow-hidden rounded-md">
+        <div className="h-[180px] w-full overflow-hidden rounded-xl">
           {item.photos.length > 0 ? (
             <div className="scrollbar-hide flex h-full snap-x snap-mandatory overflow-x-auto">
               {item.photos.map((src, i) => (
@@ -730,24 +809,22 @@ function RecommendCard({ item, index }: { item: RecommendParking; index: number 
           )}
         </div>
 
-        {/* 이름 + 면수/거리 */}
         <div className="flex items-center justify-between">
           <div className="flex max-w-[180px] min-w-0 items-center gap-1">
-            <span className="truncate text-[16px] font-bold text-[#263238]">{item.name}</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0">
+            <span className="truncate text-[15px] font-bold text-[#263238]">{item.name}</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0">
               <path d="M9 6l6 6-6 6" stroke="#6D7D90" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <div className="flex shrink-0 items-center gap-2 text-[14px] text-[#b8c3d0]">
+          <div className="flex shrink-0 items-center gap-1.5 text-[13px] text-[#b8c3d0]">
             <span>{item.qty ? `${item.qty.toLocaleString()}면` : '정보없음'}</span>
-            <span>•</span>
+            <span>·</span>
             <span>{item.distance >= 1000 ? `${(item.distance / 1000).toFixed(1)}km` : `${item.distance}m`}</span>
           </div>
         </div>
 
-        {/* 최저가 티켓 */}
         {firstTicket && (
-          <p className="truncate text-[14px] font-medium text-[#09f]">
+          <p className="text-primary truncate text-[13px] font-medium">
             {firstTicket.name} {firstTicket.price.toLocaleString()}원{extraCount > 0 && ` 외 ${extraCount}개`}
           </p>
         )}
@@ -756,16 +833,45 @@ function RecommendCard({ item, index }: { item: RecommendParking; index: number 
   )
 }
 
+/* ─── NearbyTab ─── */
+function NearbyTab({ detail }: { detail: ReturnType<typeof useParkingDetailViewModel>['detail'] }) {
+  if (!detail?.aiDescription) {
+    return (
+      <div className="p-6">
+        <h2 className="text-text-strong mb-3 text-[18px] font-bold">주변 정보</h2>
+        <p className="text-text-soft text-[14px]">주변 정보가 없습니다.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-5 p-6">
+      <h2 className="text-text-strong text-[18px] font-bold">주변 정보</h2>
+      <div
+        className="border-stroke-soft flex gap-2.5 rounded-lg border p-3"
+        style={{ background: 'linear-gradient(130deg, #F0EBFF 0%, #F0F9FF 100%)' }}
+      >
+        <div className="mt-1.5 shrink-0">
+          <div
+            className="flex size-6 items-center justify-center rounded-full text-[13px] font-semibold text-white"
+            style={{ background: 'linear-gradient(137deg, #F49DFF 8%, #09F 120%)' }}
+          >
+            AI
+          </div>
+        </div>
+        <p className="text-text-strong text-[15px] leading-[1.65]">{detail.aiDescription.response}</p>
+      </div>
+    </div>
+  )
+}
+
 /* ─── Footer ─── */
 function Footer() {
   return (
     <div className="flex flex-col">
-      {/* 광고 모집 배너 */}
       <div className="w-full">
         <img src="/images/banner_ad_recruit.svg" alt="이 자리에 광고를 모집하고 있어요" className="block w-full" />
       </div>
-
-      {/* 사업자 정보 — pb-24로 지도보기 버튼이 마지막 콘텐츠를 가리지 않도록 여백 확보 */}
       <div className="flex flex-1 flex-col gap-6 bg-[#f7f7f7] p-6 pb-24">
         <button className="border-primary text-primary h-[46px] w-full rounded-xl border text-[14px] font-medium">
           모두의 주차장 앱 다운로드
@@ -813,61 +919,6 @@ function Footer() {
           >
             고객센터
           </Link>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ─── NearbyTab ─── */
-function NearbyTab({ detail }: { detail: ReturnType<typeof useParkingDetailViewModel>['detail'] }) {
-  if (!detail?.aiDescription) {
-    return (
-      <div className="p-6">
-        <h2 className="text-text-strong mb-4 text-[20px] font-semibold">주변 정보</h2>
-        <p className="text-text-soft text-[14px]">주변 정보가 없습니다.</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex flex-col gap-6 p-6">
-      <h2 className="text-text-strong text-[20px] font-semibold">주변 정보</h2>
-      <div
-        className="border-stroke-soft flex gap-2.5 rounded-lg border p-3"
-        style={{ background: 'linear-gradient(130deg, #F0EBFF 0%, #F0F9FF 100%)' }}
-      >
-        <div className="mt-1.5 shrink-0">
-          <div
-            className="flex size-6 items-center justify-center rounded-full text-[14px] font-semibold text-white"
-            style={{ background: 'linear-gradient(137deg, #F49DFF 8%, #09F 120%)' }}
-          >
-            AI
-          </div>
-        </div>
-        <p className="text-text-strong text-[16px] leading-[1.625]">{detail.aiDescription.response}</p>
-      </div>
-      <div className="flex items-center justify-between">
-        <span className="text-text-sub text-[14px]">위의 요약이 도움이 되었나요?</span>
-        <div className="flex gap-2">
-          <button className="bg-primary/10 flex items-center rounded-full px-3.5 py-1.5">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="#09F">
-              <path
-                d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3M14 2l-1 7h7a2 2 0 011 1.9l-1.5 7A2 2 0 0117.5 19H7V9l5-7z"
-                stroke="#09F"
-                strokeWidth="1.5"
-              />
-            </svg>
-          </button>
-          <button className="flex items-center rounded-full bg-[#EBEBEB] px-3.5 py-1.5">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M17 2h3a2 2 0 012 2v7a2 2 0 01-2 2h-3M10 22l1-7H4a2 2 0 01-1-1.9l1.5-7A2 2 0 016.5 5H17v10l-5 7z"
-                stroke="#A3A3A3"
-                strokeWidth="1.5"
-              />
-            </svg>
-          </button>
         </div>
       </div>
     </div>
