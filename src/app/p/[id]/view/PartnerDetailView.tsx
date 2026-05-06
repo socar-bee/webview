@@ -130,7 +130,7 @@ export default function PartnerDetailView({ seq, initialDetail }: PartnerDetailV
     <div className="flex h-full flex-col">
       <main className="relative min-h-0 flex-1">
         {/* Search Bar */}
-        <div className="absolute top-0 left-0 z-[var(--z-map-ui)] flex w-full flex-col gap-2.5 px-4 pt-2">
+        <div className="absolute top-0 left-0 z-(--z-map-ui) flex w-full flex-col gap-2.5 px-4 pt-2">
           <Link
             href="/search"
             className="rounded-10 bg-bg-white shadow-02 flex h-12 w-full cursor-pointer items-center gap-2.5 px-4"
