@@ -286,9 +286,10 @@ export default function AnimationSheet({
             {children}
           </div>
 
-          {/* Overlay — 스크롤 영역 위에 고정. full 상태에서만 노출 */}
+          {/* Overlay — 스크롤 영역 위에 고정. full 상태에서만 노출.
+           *   z-20: 본문 안 sticky 탭(z-10)보다 높여 어떤 스크롤 위치에서도 가려지지 않게 */}
           {snap === 'full' && overlay && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">{overlay}</div>
+            <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center">{overlay}</div>
           )}
         </motion.div>
       </div>
