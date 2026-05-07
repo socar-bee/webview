@@ -29,10 +29,14 @@ export function useLoginViewModel() {
     setIsLoading(true)
 
     try {
+      // 스펙상 deviceType은 android | iphone 만 허용 → web 환경에선 user-agent로 분기
+      const deviceType: 'android' | 'iphone' =
+        typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent) ? 'android' : 'iphone'
+
       const res = await login({
         email,
         pw: password,
-        deviceType: 'web',
+        deviceType,
         deviceToken: 'web',
         version: '2.0.0'
       })
