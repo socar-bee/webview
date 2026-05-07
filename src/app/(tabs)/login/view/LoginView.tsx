@@ -12,43 +12,122 @@ export default function LoginView() {
   if (vm.showEmailForm) return <EmailForm vm={vm} />
 
   return (
-    <div className="bg-bg-white flex min-h-full w-full flex-col px-6 pt-16 pb-8">
-      {/* ─── Brand ─── */}
-      <header className="flex flex-col items-center gap-3">
+    <div className="bg-bg-white relative flex min-h-full w-full flex-col">
+      {/* ─── Top bar (logo + customer support) ─── */}
+      <header className="flex h-14 shrink-0 items-center justify-center px-5">
+        <Link
+          href="https://help.modu.kr"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-text-soft absolute top-1/2 right-5 -translate-y-1/2 text-[12px] hover:underline"
+        >
+          고객센터
+        </Link>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/logo.webp" alt="모두의주차장" className="h-12 select-none" draggable={false} />
-        <p className="text-text-soft text-[14px] tracking-[-0.2px]">대한민국 No.1 주차 플랫폼</p>
+        <img src="/images/logo.webp" alt="모두의주차장" className="h-7 select-none" draggable={false} />
       </header>
 
-      {/* ─── Actions (vertically centered) ─── */}
-      <div className="flex flex-1 flex-col justify-center">
-        <div className="mx-auto flex w-full max-w-[320px] flex-col gap-2.5">
-          <SocialButton kind="kakao" icon={<IcoKakao />} label="카카오로 시작하기" onClick={vm.handleKakaoLogin} />
-          <SocialButton kind="naver" icon={<IcoNaver />} label="네이버로 시작하기" onClick={vm.handleNaverLogin} />
+      {/* ─── Hero card ─── */}
+      <div className="px-5 pt-2">
+        <div
+          className="relative h-[280px] overflow-hidden rounded-[20px]"
+          style={{
+            backgroundImage: 'linear-gradient(135deg, #0A1A2E 0%, #16314D 60%, #1B4373 100%)'
+          }}
+        >
+          {/* Soft glow */}
+          <span aria-hidden className="absolute -top-16 -right-16 size-48 rounded-full bg-[#0099FF]/30 blur-3xl" />
+          <span aria-hidden className="absolute -bottom-12 -left-12 size-40 rounded-full bg-[#7C4DFF]/25 blur-3xl" />
 
-          <Divider />
+          <div className="relative z-10 flex h-full flex-col p-6">
+            <span className="self-start rounded-full bg-[#FF9F43]/15 px-2.5 py-1 text-[12px] font-bold text-[#FFB85C]">
+              #사전예약 OPEN
+            </span>
+            <h1 className="mt-4 text-[26px] leading-[1.25] font-extrabold tracking-[-0.4px] text-white">
+              주차 걱정 없이
+              <br />
+              원하는 곳으로
+            </h1>
+            <p className="mt-2 text-[13px] leading-[1.5] text-white/70">
+              원하는 시간에 미리 예약하고
+              <br />더 합리적으로 주차하세요
+            </p>
+          </div>
 
-          <button
-            onClick={vm.openEmailForm}
-            className="text-text-sub hover:text-text-strong flex cursor-pointer items-center justify-center gap-2 py-2.5 text-[14px] font-medium transition-colors"
+          {/* Decorative parking pin glyph */}
+          <svg
+            width="180"
+            height="180"
+            viewBox="0 0 24 24"
+            className="absolute -right-6 -bottom-6 text-white/[0.06]"
+            fill="currentColor"
+            aria-hidden
           >
-            <IcoEmail className="text-text-sub" width={18} height={18} />
-            이메일로 로그인
-          </button>
-
-          {vm.error && <p className="text-error-base text-center text-[12px]">{vm.error}</p>}
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z" />
+          </svg>
         </div>
       </div>
 
-      {/* ─── Footer ─── */}
-      <footer className="mx-auto flex w-full max-w-[320px] flex-col items-center gap-4">
-        <Link
-          href={process.env.NEXT_PUBLIC_WEBAPP_HOST || 'https://app.modu.kr'}
-          className="text-text-sub hover:text-text-strong text-[13px] underline-offset-2 hover:underline"
+      {/* spacer */}
+      <div className="flex-1" />
+
+      {/* ─── CTA cluster ─── */}
+      <div className="flex flex-col items-center gap-4 px-5 pb-6">
+        {/* Tooltip bubble */}
+        <div className="relative">
+          <span className="border-primary text-primary block rounded-full border bg-white px-3 py-1 text-[12px] font-semibold">
+            3초만에 빠른 회원가입
+          </span>
+          <span
+            aria-hidden
+            className="border-primary absolute -bottom-[6px] left-1/2 size-2.5 -translate-x-1/2 rotate-45 border-r border-b bg-white"
+          />
+        </div>
+
+        {/* Primary Kakao */}
+        <button
+          onClick={vm.handleKakaoLogin}
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] bg-[#FEE500] py-4 text-[15px] font-bold text-[#191919] transition-transform active:scale-[0.98]"
         >
-          비회원으로 둘러보기
-        </Link>
-        <p className="text-text-soft text-center text-[11px] leading-[1.6]">
+          <IcoKakao />
+          카카오로 시작
+        </button>
+
+        {vm.error && <p className="text-error-base text-center text-[12px]">{vm.error}</p>}
+
+        {/* Divider */}
+        <div className="flex w-full items-center gap-3 pt-1">
+          <span className="bg-stroke-soft h-px flex-1" />
+          <span className="text-text-soft text-[12px]">또는</span>
+          <span className="bg-stroke-soft h-px flex-1" />
+        </div>
+
+        {/* Secondary social row — circular icon-only */}
+        <div className="flex items-center gap-3">
+          <CircleButton onClick={vm.handleNaverLogin} aria-label="네이버로 시작">
+            <IcoNaver className="text-[#03C75A]" />
+          </CircleButton>
+          <CircleButton onClick={vm.openEmailForm} aria-label="이메일로 로그인">
+            <IcoEmail className="text-text-strong" width={20} height={20} />
+          </CircleButton>
+          <CircleButton
+            href={process.env.NEXT_PUBLIC_WEBAPP_HOST || 'https://app.modu.kr'}
+            aria-label="비회원으로 둘러보기"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-text-strong">
+              <path
+                d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+              />
+              <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
+          </CircleButton>
+        </div>
+
+        {/* Terms */}
+        <p className="text-text-soft mt-2 text-center text-[11px] leading-[1.6]">
           회원가입 시{' '}
           <Link href="https://app.modu.kr/terms" className="underline-offset-2 hover:underline">
             이용약관
@@ -59,47 +138,35 @@ export default function LoginView() {
           </Link>
           에 동의하게 됩니다
         </p>
-      </footer>
+      </div>
     </div>
   )
 }
 
-/* ─── Social Button ─── */
-function SocialButton({
-  kind,
-  icon,
-  label,
-  onClick
+/* ─── Circle Button (icon-only secondary) ─── */
+function CircleButton({
+  children,
+  onClick,
+  href,
+  ...rest
 }: {
-  kind: 'kakao' | 'naver'
-  icon: React.ReactNode
-  label: string
-  onClick: () => void
-}) {
-  const palette = {
-    kakao: 'bg-[#FEE500] text-[#191919]',
-    naver: 'bg-[#03C75A] text-white'
-  }[kind]
-
+  children: React.ReactNode
+  onClick?: () => void
+  href?: string
+} & Pick<React.AriaAttributes, 'aria-label'>) {
+  const className =
+    'border-stroke-soft flex size-12 cursor-pointer items-center justify-center rounded-full border bg-white transition-transform active:scale-90'
+  if (href) {
+    return (
+      <Link href={href} className={className} {...rest}>
+        {children}
+      </Link>
+    )
+  }
   return (
-    <button
-      onClick={onClick}
-      className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] py-3.5 text-[14px] font-bold transition-transform active:scale-[0.98] ${palette}`}
-    >
-      <span className="flex size-5 items-center justify-center">{icon}</span>
-      {label}
+    <button onClick={onClick} className={className} {...rest}>
+      {children}
     </button>
-  )
-}
-
-/* ─── Divider ("또는") ─── */
-function Divider() {
-  return (
-    <div className="flex items-center gap-3 py-2">
-      <span className="bg-stroke-soft h-px flex-1" />
-      <span className="text-text-soft text-[12px]">또는</span>
-      <span className="bg-stroke-soft h-px flex-1" />
-    </div>
   )
 }
 
