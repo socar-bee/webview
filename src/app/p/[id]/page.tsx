@@ -8,7 +8,7 @@ import { META_KEYWORDS, SEO_BLOCK_PARKINGLOT_SEQ_LIST, removeOperatorPrefix } fr
 
 import type { Metadata } from 'next'
 
-import { fetchParkingLotDetail, fetchTicketList } from '@/app/parking/[id]/model/api'
+import { fetchParkingLotDetail, fetchTicketList } from '@/app/p/[id]/model/api'
 
 import PartnerDetailView from './view'
 

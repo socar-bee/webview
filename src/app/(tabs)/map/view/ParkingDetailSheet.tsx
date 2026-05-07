@@ -11,12 +11,12 @@ import { useFavorites } from '@/shared/hooks/useFavorites'
 
 import { formatModifyDate } from '@/shared/lib/date'
 
-import type { RecommendParking } from '@/app/parking/[id]/viewmodel'
+import type { RecommendParking } from '@/app/p/[id]/viewmodel'
 
 import type { ParkingLotType, TicketListItem } from '@/shared/types/parking'
 import { CategorySeq, CouponTypeGroup } from '@/shared/types/parking'
 
-import { useParkingDetailViewModel, useRecommendParkingViewModel } from '@/app/parking/[id]/viewmodel'
+import { useParkingDetailViewModel, useRecommendParkingViewModel } from '@/app/p/[id]/viewmodel'
 
 export interface ParkingDetailData {
   seq: number
