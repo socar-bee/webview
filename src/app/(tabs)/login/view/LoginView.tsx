@@ -51,13 +51,19 @@ export default function LoginView() {
 
           {vm.error && <p className="text-error-base mt-2 text-[12px]">{vm.error}</p>}
 
-          {/* Guest */}
-          <Link
-            href={process.env.NEXT_PUBLIC_WEBAPP_HOST || 'https://app.modu.kr'}
-            className="text-text-sub hover:text-text-strong mt-5 text-[13px] font-medium"
-          >
-            비회원으로 둘러보기
-          </Link>
+          {/* Sign up + Guest — 가운데 vertical divider로 두 액션 분리 */}
+          <div className="text-text-sub mt-5 flex items-center gap-3 text-[13px] font-medium">
+            <Link href="/signup" className="hover:text-primary transition-colors">
+              회원가입
+            </Link>
+            <span className="bg-stroke-soft block h-3 w-px" />
+            <Link
+              href={process.env.NEXT_PUBLIC_WEBAPP_HOST || 'https://app.modu.kr'}
+              className="hover:text-text-strong transition-colors"
+            >
+              비회원으로 둘러보기
+            </Link>
+          </div>
 
           {/* Terms */}
           <p className="text-text-soft mt-4 text-center leading-[16px]" style={{ fontSize: 'var(--font-size-c4)' }}>
