@@ -92,6 +92,40 @@ export default function TicketDetailView({ couponSeq, initialTicket, parkingTick
           </div>
         </section>
 
+        {/* ─── 주차장 정보 — Hero 바로 아래 (정보 우선순위 상향) ─── */}
+        {pin && (
+          <section className="bg-bg-white px-5 pb-4">
+            <button
+              onClick={() => vm.goToParkinglotDetail(pin.seq)}
+              className="border-stroke-soft hover:border-primary/40 flex w-full cursor-pointer items-center justify-between rounded-[14px] border px-4 py-3.5 text-left transition-colors"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-full">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </span>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-text-strong truncate text-[14px] font-semibold">주차장 정보</span>
+                  {address && <span className="text-text-soft truncate text-[12px]">{address}</span>}
+                </div>
+              </div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-text-disabled shrink-0">
+                <path
+                  d="M9 6l6 6-6 6"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </section>
+        )}
+
         {/* ─── 같은 주차장 주차권 (가로 스크롤 pill) ─── */}
         {vm.tabs.length > 0 && (
           <section className="bg-bg-white pb-5">
@@ -123,30 +157,6 @@ export default function TicketDetailView({ couponSeq, initialTicket, parkingTick
           {t.notice2 && <NoticeCard icon="caution" title="결제 전 유의사항" body={t.notice2} />}
           {t.enteringNotice && <NoticeCard icon="car" title="입출차 주의사항" body={t.enteringNotice} />}
         </section>
-
-        {/* ─── 주차장 정보 단축 진입 ─── */}
-        {pin && (
-          <section className="bg-bg-white border-stroke-soft/60 mt-2 border-t px-5 py-4">
-            <button
-              onClick={() => vm.goToParkinglotDetail(pin.seq)}
-              className="flex w-full cursor-pointer items-center justify-between text-left"
-            >
-              <div className="flex flex-col gap-0.5">
-                <span className="text-text-strong text-[14px] font-semibold">주차장 정보</span>
-                {address && <span className="text-text-soft truncate text-[12px]">{address}</span>}
-              </div>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-text-disabled shrink-0">
-                <path
-                  d="M9 6l6 6-6 6"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-          </section>
-        )}
 
         <div className="h-6" />
 
