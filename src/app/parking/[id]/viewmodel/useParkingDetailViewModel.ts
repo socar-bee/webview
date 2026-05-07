@@ -45,7 +45,7 @@ export function useParkingDetailViewModel(seq: number | null, type?: ParkingLotT
   const goToPayment = useCallback(
     (couponSeq: number) => {
       if (!seq) return
-      router.push(`/parking/${seq}/payment?couponSeq=${couponSeq}${carryQuery}`)
+      router.push(`/p/${seq}/payment?couponSeq=${couponSeq}${carryQuery}`)
     },
     [seq, router, carryQuery]
   )

@@ -12,7 +12,7 @@ export interface FavoriteParking {
   image?: string
   /** 추가 시각 (정렬용 ms epoch) */
   addedAt: number
-  /** /p/[seq] 제휴주차장 / /parking/[seq] 공영 — 라우트 분기용 */
+  /** 제휴 여부 (메타 정보용) */
   isPartner?: boolean
 }
 

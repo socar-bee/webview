@@ -19,7 +19,7 @@ export function useFavoritesViewModel() {
 
   const goToParking = useCallback(
     (f: FavoriteParking) => {
-      router.push(f.isPartner ? `/p/${f.seq}` : `/parking/${f.seq}`)
+      router.push(`/p/${f.seq}`)
     },
     [router]
   )

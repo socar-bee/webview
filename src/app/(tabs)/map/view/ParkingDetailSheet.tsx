@@ -166,14 +166,19 @@ export default function ParkingDetailSheet({
     return () => container.removeEventListener('scroll', update)
   }, [isOpen, snap, getScrollContainer])
 
-  // Hero slider counter
+  // Hero slider counter — 슬라이더 DOM이 detail 로드 후 마운트되므로
+  // photos 길이를 dep에 포함시켜 리스너가 실제 렌더 시점에 부착되도록 함
+  const photosLen = vm.detail?.basic.photos?.length ?? 0
   useEffect(() => {
     const slider = heroSliderRef.current
     if (!slider) return
-    const onScroll = () => setSlideIndex(Math.round(slider.scrollLeft / slider.offsetWidth))
+    const onScroll = () => {
+      const w = slider.offsetWidth
+      if (w > 0) setSlideIndex(Math.round(slider.scrollLeft / w))
+    }
     slider.addEventListener('scroll', onScroll, { passive: true })
     return () => slider.removeEventListener('scroll', onScroll)
-  }, [data?.seq])
+  }, [data?.seq, photosLen])
 
   // 좌표 전달
   const lat = vm.detail?.basic.latitude
