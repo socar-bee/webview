@@ -91,16 +91,17 @@ export function useTicketDetailViewModel({
     return { text: '', disabled: true, fontSize: 'body', isAbleApp: false }
   }, [ticket])
 
-  // ── 탭(같은 주차장 티켓 목록) ──
-  const tabs = useMemo(
-    () =>
-      parkingTickets.map((t) => ({
-        couponSeq: t.couponSeq,
-        couponName: t.couponName,
-        isActive: t.couponSeq === ticket?.couponSeq
-      })),
-    [parkingTickets, ticket?.couponSeq]
-  )
+  // ── 탭(같은 주차장 티켓 목록) — 선택된 주차권이 항상 맨 앞 ──
+  const tabs = useMemo(() => {
+    const all = parkingTickets.map((t) => ({
+      couponSeq: t.couponSeq,
+      couponName: t.couponName,
+      isActive: t.couponSeq === ticket?.couponSeq
+    }))
+    const active = all.filter((t) => t.isActive)
+    const others = all.filter((t) => !t.isActive)
+    return [...active, ...others]
+  }, [parkingTickets, ticket?.couponSeq])
 
   // ── 핸들러 ──
   const goToTicketDetail = useCallback(
