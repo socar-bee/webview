@@ -36,7 +36,7 @@ export default function TicketDetailView({ couponSeq, initialTicket, parkingTick
     <div className="flex h-full flex-col">
       <main className="bg-bg-weak scrollbar-hide flex min-h-0 flex-1 flex-col overflow-y-auto">
         {/* ─── Sticky Header ─── */}
-        <header className="bg-bg-white border-stroke-soft/60 sticky top-0 z-10 flex h-12 shrink-0 items-center justify-between border-b px-2">
+        <header className="bg-bg-white border-stroke-soft/60 sticky top-0 z-20 flex h-12 shrink-0 items-center justify-between border-b px-2">
           <button
             onClick={vm.goBack}
             aria-label="뒤로"
@@ -161,7 +161,7 @@ export default function TicketDetailView({ couponSeq, initialTicket, parkingTick
         <div className="h-6" />
 
         {/* ─── Sticky 구매 버튼 ─── */}
-        <footer className="bg-bg-white border-stroke-soft/60 sticky bottom-0 border-t px-5 pt-3 pb-4">
+        <footer className="bg-bg-white border-stroke-soft/60 sticky bottom-0 z-20 border-t px-5 pt-3 pb-4">
           <button
             onClick={vm.handleClickPurchase}
             disabled={vm.purchaseButton.disabled}
