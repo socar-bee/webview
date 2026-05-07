@@ -399,12 +399,12 @@ export default function ParkingDetailSheet({
           </div>
         )}
 
-        {/* ── Ticket stub cards ── */}
+        {/* ── Ticket stub cards ── moduComment는 full 상태에서만 노출 (peek/half에서 가시 영역 절약) */}
         {isPartner && sortedTickets.length > 0 && (
           <TicketList
             tickets={sortedTickets}
             onTicketClick={(seq) => vm.goToTicketDetail(seq)}
-            moduComment={moduComment || undefined}
+            moduComment={snap === 'full' ? moduComment || undefined : undefined}
           />
         )}
 
