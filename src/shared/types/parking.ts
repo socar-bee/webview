@@ -25,6 +25,19 @@ export enum CategorySeq {
   PRIVATE = 2
 }
 
+/** 주차권 구매 가능 상태 (purchaseAvailability.status) */
+export enum PurchaseAvailabilityStatus {
+  AVAILABLE = 'AVAILABLE',
+  NOT_YET_OPEN = 'NOT_YET_OPEN',
+  SOLD_OUT = 'SOLD_OUT',
+  CLOSED = 'CLOSED'
+}
+
+export interface PurchaseAvailability {
+  status: PurchaseAvailabilityStatus
+  purchaseOpenDateTime: string | null
+}
+
 /* ─── ParkingLot Detail ─── */
 
 export interface ParkingLotPhoto {
@@ -107,6 +120,10 @@ export interface TicketListItem {
   couponTypeGroup: CouponTypeGroup
   couponTypeName: string
   price: number
+  /** 사용 기간 라벨 (예: "10/10 ~ 10/15") */
+  usagePeriodLabel?: string
+  /** 구매 가능 상태 + 오픈 시각 */
+  purchaseAvailability?: PurchaseAvailability
   isOpen: boolean
   isSoldOut: boolean
   usingTimeLabel: string
@@ -143,6 +160,10 @@ export interface TicketDetail {
   couponTypeGroup: CouponTypeGroup
   couponTypeName: string
   price: number
+  /** 사용 기간 라벨 (NOT_YET_OPEN 시 버튼 서브타이틀로도 사용) */
+  usagePeriodLabel: string
+  /** 구매 가능 상태 + 오픈 시각 — 구매 버튼 분기 핵심 */
+  purchaseAvailability: PurchaseAvailability
   isOpen: boolean
   isSoldOut: boolean
   usingTimeLabel: string
