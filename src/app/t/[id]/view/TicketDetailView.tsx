@@ -266,8 +266,8 @@ function PhotoViewer({
       className="fixed inset-0 z-[var(--z-modal,9999)] flex items-center justify-center bg-black/95"
       onClick={onClose}
     >
-      {/* 상단바 */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3">
+      {/* 상단바 — z-10 으로 슬라이더 위에 렌더 (X 버튼 클릭 영역 확보) */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3">
         <span className="text-[14px] font-semibold text-white tabular-nums">
           {photos.length > 1 ? `${index + 1} / ${photos.length}` : ''}
         </span>
