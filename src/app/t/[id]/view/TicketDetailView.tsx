@@ -1,9 +1,12 @@
 'use client'
 
+import Image from 'next/image'
+import { useEffect, useRef, useState } from 'react'
+
 import DockBar from '@/shared/components/layout/DockBar'
 
 import { useTicketDetailViewModel } from '../viewmodel'
-import type { ParkingLotDetail, TicketDetail, TicketListItem } from '@/shared/types/parking'
+import type { ParkingLotDetail, TicketDetail, TicketListItem, TicketPhoto } from '@/shared/types/parking'
 
 interface TicketDetailViewProps {
   couponSeq: number
@@ -83,6 +86,9 @@ export default function TicketDetailView({ couponSeq, initialTicket, parkingTick
           </div>
         </section>
 
+        {/* ─── 주차권 사진 슬라이더 (와이드 비율) ─── */}
+        {t.photos.length > 0 && <PhotoSlider photos={t.photos} />}
+
         {/* ─── 같은 주차장 주차권 (가로 스크롤 pill) ─── */}
         {vm.tabs.length > 0 && (
           <section className="bg-bg-white pb-5">
@@ -159,6 +165,57 @@ export default function TicketDetailView({ couponSeq, initialTicket, parkingTick
 
       <DockBar />
     </div>
+  )
+}
+
+/* ─── Photo Slider — 와이드 비율(2:1) 가로 스크롤 + 페이지 인디케이터 ─── */
+function PhotoSlider({ photos }: { photos: TicketPhoto[] }) {
+  const sliderRef = useRef<HTMLDivElement>(null)
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    const el = sliderRef.current
+    if (!el) return
+    const onScroll = () => {
+      const w = el.offsetWidth
+      if (w > 0) setIndex(Math.round(el.scrollLeft / w))
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [photos.length])
+
+  return (
+    <section className="bg-bg-white pb-5">
+      <div className="relative">
+        <div
+          ref={sliderRef}
+          className="scrollbar-hide flex w-full overflow-x-auto"
+          style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+        >
+          {photos.map((photo, i) => (
+            <div
+              key={i}
+              className="bg-bg-soft relative w-full shrink-0"
+              style={{ aspectRatio: '1080 / 522', scrollSnapAlign: 'start' }}
+            >
+              <Image
+                src={photo.fileName}
+                alt={photo.pictureDesc ?? ''}
+                fill
+                sizes="(max-width: 480px) 100vw, 480px"
+                className="object-cover"
+                priority={i === 0}
+              />
+            </div>
+          ))}
+        </div>
+        {photos.length > 1 && (
+          <span className="pointer-events-none absolute right-4 bottom-3 rounded-full bg-black/55 px-2.5 py-0.5 text-[11px] font-semibold text-white tabular-nums">
+            {index + 1} / {photos.length}
+          </span>
+        )}
+      </div>
+    </section>
   )
 }
 
