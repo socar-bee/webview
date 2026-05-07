@@ -1,6 +1,8 @@
 'use client'
 
+import { AnimatePresence, motion } from 'framer-motion'
 import Image from 'next/image'
+import { useEffect, useRef, useState } from 'react'
 
 import DockBar from '@/shared/components/layout/DockBar'
 
@@ -16,6 +18,7 @@ interface TicketDetailViewProps {
 
 export default function TicketDetailView({ couponSeq, initialTicket, parkingTickets, pin }: TicketDetailViewProps) {
   const vm = useTicketDetailViewModel({ couponSeq, initialTicket, parkingTickets, pin })
+  const [viewer, setViewer] = useState<{ open: boolean; startIndex: number }>({ open: false, startIndex: 0 })
 
   if (vm.isLoading || !vm.ticket) {
     return (
@@ -87,7 +90,9 @@ export default function TicketDetailView({ couponSeq, initialTicket, parkingTick
                   </p>
                 )}
               </div>
-              {t.photos.length > 0 && <HeroPhoto photos={t.photos} />}
+              {t.photos.length > 0 && (
+                <HeroPhoto photos={t.photos} onClick={() => setViewer({ open: true, startIndex: 0 })} />
+              )}
             </div>
           </div>
         </section>
@@ -177,22 +182,134 @@ export default function TicketDetailView({ couponSeq, initialTicket, parkingTick
       </main>
 
       <DockBar />
+
+      {/* ─── Photo Viewer — fullscreen dim + 가로 슬라이드 ─── */}
+      <AnimatePresence>
+        {viewer.open && t.photos.length > 0 && (
+          <PhotoViewer
+            photos={t.photos}
+            startIndex={viewer.startIndex}
+            onClose={() => setViewer({ open: false, startIndex: 0 })}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
 /* ─── Hero Photo — 우측 임베드 정사각 라운드 썸네일 (2장 이상이면 +N 뱃지) ─── */
-function HeroPhoto({ photos }: { photos: TicketPhoto[] }) {
+function HeroPhoto({ photos, onClick }: { photos: TicketPhoto[]; onClick: () => void }) {
   const [first, ...rest] = photos
   return (
-    <div className="bg-bg-soft relative size-[100px] shrink-0 overflow-hidden rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+    <button
+      onClick={onClick}
+      aria-label="주차권 사진 크게 보기"
+      className="bg-bg-soft relative size-[100px] shrink-0 cursor-pointer overflow-hidden rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-transform active:scale-95"
+    >
       <Image src={first.fileName} alt={first.pictureDesc ?? ''} fill sizes="100px" className="object-cover" priority />
       {rest.length > 0 && (
         <span className="pointer-events-none absolute right-1.5 bottom-1.5 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-semibold text-white tabular-nums">
           +{rest.length}
         </span>
       )}
-    </div>
+    </button>
+  )
+}
+
+/* ─── Photo Viewer — 풀스크린 dim + 가로 슬라이드 + 페이지 인디케이터 ─── */
+function PhotoViewer({
+  photos,
+  startIndex,
+  onClose
+}: {
+  photos: TicketPhoto[]
+  startIndex: number
+  onClose: () => void
+}) {
+  const sliderRef = useRef<HTMLDivElement>(null)
+  const [index, setIndex] = useState(startIndex)
+
+  // 진입 시 startIndex 위치로 즉시 점프 (animation 없이)
+  useEffect(() => {
+    const el = sliderRef.current
+    if (!el) return
+    el.scrollTo({ left: startIndex * el.offsetWidth, behavior: 'instant' as ScrollBehavior })
+  }, [startIndex])
+
+  // 스크롤 → 현재 인덱스 추적
+  useEffect(() => {
+    const el = sliderRef.current
+    if (!el) return
+    const onScroll = () => {
+      const w = el.offsetWidth
+      if (w > 0) setIndex(Math.round(el.scrollLeft / w))
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [photos.length])
+
+  // ESC 키로 닫기
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-[var(--z-modal,9999)] flex items-center justify-center bg-black/95"
+      onClick={onClose}
+    >
+      {/* 상단바 */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3">
+        <span className="text-[14px] font-semibold text-white tabular-nums">
+          {photos.length > 1 ? `${index + 1} / ${photos.length}` : ''}
+        </span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onClose()
+          }}
+          aria-label="닫기"
+          className="pointer-events-auto flex size-10 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      {/* 슬라이더 */}
+      <div
+        ref={sliderRef}
+        className="scrollbar-hide flex h-full w-full overflow-x-auto"
+        style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {photos.map((photo, i) => (
+          <div
+            key={i}
+            className="relative flex h-full w-full shrink-0 items-center justify-center"
+            style={{ scrollSnapAlign: 'center' }}
+          >
+            <Image
+              src={photo.fileName}
+              alt={photo.pictureDesc ?? ''}
+              fill
+              sizes="100vw"
+              className="object-contain"
+              priority={i === startIndex}
+            />
+          </div>
+        ))}
+      </div>
+    </motion.div>
   )
 }
 
