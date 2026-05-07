@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import AnimationSheet, { type SheetSnap } from '@/shared/components/ui/AnimationSheet'
+import Toast from '@/shared/components/ui/Toast'
 import { useFavorites } from '@/shared/hooks/useFavorites'
 
 import { formatModifyDate } from '@/shared/lib/date'
@@ -59,6 +60,23 @@ export default function ParkingDetailSheet({
   const [activeSection, setActiveSection] = useState<SheetTab>('info')
   const [showNavTitle, setShowNavTitle] = useState(false)
   const [slideIndex, setSlideIndex] = useState(0)
+  const [toastMsg, setToastMsg] = useState<{ id: number; message: string } | null>(null)
+
+  const showToast = useCallback((message: string) => {
+    setToastMsg({ id: Date.now(), message })
+  }, [])
+
+  const handleCopyAddress = useCallback(
+    async (address: string) => {
+      try {
+        await navigator.clipboard.writeText(address)
+        showToast('주소가 복사되었어요')
+      } catch {
+        showToast('복사에 실패했어요')
+      }
+    },
+    [showToast]
+  )
 
   const sectionRefs = useMemo<Record<SheetTab, React.RefObject<HTMLDivElement | null>>>(
     () => ({
@@ -408,7 +426,7 @@ export default function ParkingDetailSheet({
           <InfoTab
             detail={detail}
             isLoading={vm.isLoading}
-            onCopyAddress={vm.copyAddress}
+            onCopyAddress={handleCopyAddress}
             formatCurrentFee={vm.formatCurrentFee}
           />
         </div>
@@ -427,6 +445,7 @@ export default function ParkingDetailSheet({
 
         <Footer />
       </div>
+      <Toast id={toastMsg?.id} message={toastMsg?.message ?? null} onDismiss={() => setToastMsg(null)} />
     </AnimationSheet>
   )
 }
