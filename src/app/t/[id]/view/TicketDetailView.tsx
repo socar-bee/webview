@@ -1,7 +1,6 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useRef, useState } from 'react'
 
 import DockBar from '@/shared/components/layout/DockBar'
 
@@ -53,41 +52,45 @@ export default function TicketDetailView({ couponSeq, initialTicket, parkingTick
               />
             </svg>
           </button>
-          <h1 className="text-text-strong text-[16px] font-bold">주차권 상세</h1>
-          <div className="size-10" />
+          <h1 className="text-text-strong mx-2 flex-1 truncate text-center text-[16px] font-bold">
+            {vm.ticket?.couponName ?? '주차권 상세'}
+          </h1>
+          <div className="size-10 shrink-0" />
         </header>
 
-        {/* ─── Hero — primary 톤 카드 ─── */}
+        {/* ─── Hero — primary 톤 카드 (우측에 사진 임베드) ─── */}
         <section className="bg-bg-white px-5 pt-5 pb-6">
           <div
             className="border-stroke-soft relative overflow-hidden rounded-[16px] border p-5"
             style={{ background: 'linear-gradient(135deg, #F0F8FF 0%, #E1F0FF 100%)' }}
           >
             <span aria-hidden className="bg-primary/10 absolute -top-10 -right-10 size-32 rounded-full blur-2xl" />
-            {parkinglotName && (
-              <p className="text-primary relative z-10 text-[12px] font-semibold tracking-[-0.2px]">{parkinglotName}</p>
-            )}
-            <h2 className="text-text-strong relative z-10 mt-1.5 text-[22px] leading-[1.25] font-extrabold tracking-[-0.4px]">
-              {t.couponName}
-            </h2>
-            <p className="text-text-strong relative z-10 mt-3 text-[26px] leading-none font-extrabold tabular-nums">
-              {t.price.toLocaleString()}
-              <span className="text-text-sub ml-0.5 text-[15px] font-bold">원</span>
-            </p>
-            {t.usagePeriodLabel && (
-              <p className="text-text-sub relative z-10 mt-2 inline-flex items-center gap-1 text-[13px]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <circle cx="12" cy="12" r="9" stroke="#A3A3A3" strokeWidth="1.5" />
-                  <path d="M12 7v5l3 3" stroke="#A3A3A3" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-                {t.usagePeriodLabel}
-              </p>
-            )}
+            <div className="relative z-10 flex items-center gap-4">
+              <div className="min-w-0 flex-1">
+                {parkinglotName && (
+                  <p className="text-primary truncate text-[12px] font-semibold tracking-[-0.2px]">{parkinglotName}</p>
+                )}
+                <h2 className="text-text-strong mt-1.5 line-clamp-2 text-[20px] leading-[1.25] font-extrabold tracking-[-0.4px]">
+                  {t.couponName}
+                </h2>
+                <p className="text-text-strong mt-2.5 text-[24px] leading-none font-extrabold tabular-nums">
+                  {t.price.toLocaleString()}
+                  <span className="text-text-sub ml-0.5 text-[14px] font-bold">원</span>
+                </p>
+                {t.usagePeriodLabel && (
+                  <p className="text-text-sub mt-2 inline-flex items-center gap-1 text-[12px]">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <circle cx="12" cy="12" r="9" stroke="#A3A3A3" strokeWidth="1.5" />
+                      <path d="M12 7v5l3 3" stroke="#A3A3A3" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    {t.usagePeriodLabel}
+                  </p>
+                )}
+              </div>
+              {t.photos.length > 0 && <HeroPhoto photos={t.photos} />}
+            </div>
           </div>
         </section>
-
-        {/* ─── 주차권 사진 슬라이더 (와이드 비율) ─── */}
-        {t.photos.length > 0 && <PhotoSlider photos={t.photos} />}
 
         {/* ─── 같은 주차장 주차권 (가로 스크롤 pill) ─── */}
         {vm.tabs.length > 0 && (
@@ -168,54 +171,18 @@ export default function TicketDetailView({ couponSeq, initialTicket, parkingTick
   )
 }
 
-/* ─── Photo Slider — 와이드 비율(2:1) 가로 스크롤 + 페이지 인디케이터 ─── */
-function PhotoSlider({ photos }: { photos: TicketPhoto[] }) {
-  const sliderRef = useRef<HTMLDivElement>(null)
-  const [index, setIndex] = useState(0)
-
-  useEffect(() => {
-    const el = sliderRef.current
-    if (!el) return
-    const onScroll = () => {
-      const w = el.offsetWidth
-      if (w > 0) setIndex(Math.round(el.scrollLeft / w))
-    }
-    el.addEventListener('scroll', onScroll, { passive: true })
-    return () => el.removeEventListener('scroll', onScroll)
-  }, [photos.length])
-
+/* ─── Hero Photo — 우측 임베드 정사각 라운드 썸네일 (2장 이상이면 +N 뱃지) ─── */
+function HeroPhoto({ photos }: { photos: TicketPhoto[] }) {
+  const [first, ...rest] = photos
   return (
-    <section className="bg-bg-white pb-5">
-      <div className="relative">
-        <div
-          ref={sliderRef}
-          className="scrollbar-hide flex w-full overflow-x-auto"
-          style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
-        >
-          {photos.map((photo, i) => (
-            <div
-              key={i}
-              className="bg-bg-soft relative w-full shrink-0"
-              style={{ aspectRatio: '1080 / 522', scrollSnapAlign: 'start' }}
-            >
-              <Image
-                src={photo.fileName}
-                alt={photo.pictureDesc ?? ''}
-                fill
-                sizes="(max-width: 480px) 100vw, 480px"
-                className="object-cover"
-                priority={i === 0}
-              />
-            </div>
-          ))}
-        </div>
-        {photos.length > 1 && (
-          <span className="pointer-events-none absolute right-4 bottom-3 rounded-full bg-black/55 px-2.5 py-0.5 text-[11px] font-semibold text-white tabular-nums">
-            {index + 1} / {photos.length}
-          </span>
-        )}
-      </div>
-    </section>
+    <div className="bg-bg-soft relative size-[100px] shrink-0 overflow-hidden rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+      <Image src={first.fileName} alt={first.pictureDesc ?? ''} fill sizes="100px" className="object-cover" priority />
+      {rest.length > 0 && (
+        <span className="pointer-events-none absolute right-1.5 bottom-1.5 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-semibold text-white tabular-nums">
+          +{rest.length}
+        </span>
+      )}
+    </div>
   )
 }
 
