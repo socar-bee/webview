@@ -61,6 +61,7 @@ export default function ParkingDetailSheet({
   const [showNavTitle, setShowNavTitle] = useState(false)
   const [slideIndex, setSlideIndex] = useState(0)
   const [toastMsg, setToastMsg] = useState<{ id: number; message: string } | null>(null)
+  const [erroredSrcs, setErroredSrcs] = useState<Set<string>>(new Set())
 
   const showToast = useCallback((message: string) => {
     setToastMsg({ id: Date.now(), message })
@@ -289,7 +290,7 @@ export default function ParkingDetailSheet({
         {/* ── Hero Image Slider ── */}
         <div className="bg-bg-soft relative h-[260px] w-full overflow-hidden">
           {heroImages.length === 0 ? (
-            <Image src="/images/img_skeleton.png" alt="" fill sizes="480px" className="object-cover" />
+            <HeroPlaceholder />
           ) : (
             <>
               <div
@@ -303,13 +304,25 @@ export default function ParkingDetailSheet({
                     className="relative h-full w-full shrink-0"
                     style={{ scrollSnapAlign: 'start' } as React.CSSProperties}
                   >
-                    <Image
-                      src={photo.file_name}
-                      alt={`${displayName} 이미지 ${i + 1}`}
-                      fill
-                      sizes="480px"
-                      className="object-cover"
-                    />
+                    {erroredSrcs.has(photo.file_name) ? (
+                      <HeroPlaceholder />
+                    ) : (
+                      <Image
+                        src={photo.file_name}
+                        alt={`${displayName} 이미지 ${i + 1}`}
+                        fill
+                        sizes="480px"
+                        className="object-cover"
+                        onError={() =>
+                          setErroredSrcs((prev) => {
+                            if (prev.has(photo.file_name)) return prev
+                            const next = new Set(prev)
+                            next.add(photo.file_name)
+                            return next
+                          })
+                        }
+                      />
+                    )}
                   </div>
                 ))}
               </div>
@@ -557,7 +570,7 @@ function TicketList({
   const visible = expanded ? tickets : tickets.slice(0, TICKET_PREVIEW_COUNT)
 
   return (
-    <div className="bg-bg-white px-4 pt-4 pb-4">
+    <div className="bg-bg-white px-4 pb-4">
       {moduComment && (
         <div className="mb-3 rounded-md bg-sky-50 px-5 py-2 text-center">
           <p className="text-text-strong text-[13px]">{moduComment}</p>
@@ -673,6 +686,33 @@ function TicketStubCard({ ticket, onClick }: { ticket: TicketListItem; onClick: 
           </p>
           {!isDisabled && <span className="text-primary/60 text-[11px] font-medium">구매하기 ›</span>}
         </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Hero Placeholder — 이미지 없거나 로드 실패 시 표출 ─── */
+function HeroPlaceholder() {
+  return (
+    <div
+      className="flex h-full w-full items-center justify-center"
+      style={{ background: 'linear-gradient(135deg, #EBF4FF 0%, #DBEAFE 100%)' }}
+    >
+      <div className="flex flex-col items-center gap-2">
+        <span className="bg-bg-white/70 flex size-16 items-center justify-center rounded-2xl shadow-sm">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="text-primary" aria-hidden>
+            <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
+            <circle cx="9" cy="11" r="1.6" stroke="currentColor" strokeWidth="1.4" />
+            <path
+              d="M3 17l4-4 3 2 5-5 6 6"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+        <span className="text-text-soft text-[12px]">이미지 준비중</span>
       </div>
     </div>
   )
