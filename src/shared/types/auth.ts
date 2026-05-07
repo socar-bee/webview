@@ -1,6 +1,6 @@
 export interface LoginRequest {
   email: string
-  pw: string
+  password: string
   deviceType: 'android' | 'iphone'
   deviceToken: string
   version: string

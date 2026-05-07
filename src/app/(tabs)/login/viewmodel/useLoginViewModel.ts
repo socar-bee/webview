@@ -35,10 +35,10 @@ export function useLoginViewModel() {
 
       const res = await login({
         email,
-        pw: password,
+        password: password,
         deviceType,
         deviceToken: 'web',
-        version: '2.0.0'
+        version: '1.0.0'
       })
       setTokens(res.accessToken, res.refreshToken, res.userVerificationId)
 
