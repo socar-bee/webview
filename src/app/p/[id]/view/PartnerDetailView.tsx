@@ -24,8 +24,6 @@ export default function PartnerDetailView({ seq, initialDetail }: PartnerDetailV
   const [detailSnap, setDetailSnap] = useState<SheetSnap>('peek')
   const [detailOpen, setDetailOpen] = useState(false)
 
-  // 핀 클릭 시 지도 이동 방지
-  const pinClickedRef = useRef(false)
   const needPanRef = useRef(false)
 
   const lat = initialDetail?.basic.latitude
