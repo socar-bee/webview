@@ -557,7 +557,7 @@ function TicketList({
   const visible = expanded ? tickets : tickets.slice(0, TICKET_PREVIEW_COUNT)
 
   return (
-    <div className="bg-bg-weak px-4 pt-4 pb-4">
+    <div className="bg-bg-white px-4 pt-4 pb-4">
       {moduComment && (
         <div className="mb-3 rounded-md bg-sky-50 px-5 py-2 text-center">
           <p className="text-text-strong text-[13px]">{moduComment}</p>
@@ -637,23 +637,10 @@ function TicketStubCard({ ticket, onClick }: { ticket: TicketListItem; onClick: 
           )}
         </div>
 
-        {/* 세로 뜯는 선 */}
-        <div className="relative flex flex-col items-center py-3">
-          {/* 상단 노치 */}
-          <div
-            className={`absolute -top-[1px] h-[10px] w-[20px] rounded-b-full border-x border-b ${
-              isDisabled ? 'bg-bg-weak border-[#e9ebef]' : 'border-primary/20 bg-bg-weak'
-            }`}
-          />
-          {/* 점선 */}
+        {/* 세로 뜯는 점선 (노치 제거) */}
+        <div className="flex items-center py-3">
           <div
             className={`h-full w-px border-l border-dashed ${isDisabled ? 'border-[#e9ebef]' : 'border-primary/20'}`}
-          />
-          {/* 하단 노치 */}
-          <div
-            className={`absolute -bottom-[1px] h-[10px] w-[20px] rounded-t-full border-x border-t ${
-              isDisabled ? 'bg-bg-weak border-[#e9ebef]' : 'border-primary/20 bg-bg-weak'
-            }`}
           />
         </div>
 
