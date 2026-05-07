@@ -637,10 +637,23 @@ function TicketStubCard({ ticket, onClick }: { ticket: TicketListItem; onClick: 
           )}
         </div>
 
-        {/* 세로 뜯는 점선 (노치 제거) */}
-        <div className="flex items-center py-3">
+        {/* 세로 뜯는 선 — 상/하단 반원 노치 + 점선 */}
+        <div className="relative flex flex-col items-center py-3">
+          {/* 상단 노치 */}
+          <div
+            className={`absolute -top-[1px] h-[10px] w-[20px] rounded-b-full border-x border-b ${
+              isDisabled ? 'bg-bg-weak border-[#e9ebef]' : 'border-primary/20 bg-bg-white'
+            }`}
+          />
+          {/* 점선 */}
           <div
             className={`h-full w-px border-l border-dashed ${isDisabled ? 'border-[#e9ebef]' : 'border-primary/20'}`}
+          />
+          {/* 하단 노치 */}
+          <div
+            className={`absolute -bottom-[1px] h-[10px] w-[20px] rounded-t-full border-x border-t ${
+              isDisabled ? 'bg-bg-weak border-[#e9ebef]' : 'border-primary/20 bg-bg-white'
+            }`}
           />
         </div>
 
