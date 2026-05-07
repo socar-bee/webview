@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import DockBar from '@/shared/components/layout/DockBar'
@@ -21,7 +21,10 @@ interface PartnerDetailViewProps {
 
 export default function PartnerDetailView({ seq, initialDetail }: PartnerDetailViewProps) {
   const router = useRouter()
-  const [detailSnap, setDetailSnap] = useState<SheetSnap>('peek')
+  const searchParams = useSearchParams()
+  // ?snap=full 로 진입 시 시트를 full로 시작 (예: 주차권 상세 → 뒤로가기)
+  const initialSnap: SheetSnap = searchParams?.get('snap') === 'full' ? 'full' : 'peek'
+  const [detailSnap, setDetailSnap] = useState<SheetSnap>(initialSnap)
   const [detailOpen, setDetailOpen] = useState(false)
 
   const needPanRef = useRef(false)
