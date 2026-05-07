@@ -390,7 +390,7 @@ export default function ParkingDetailSheet({
         {isPartner && sortedTickets.length > 0 && (
           <TicketList
             tickets={sortedTickets}
-            onTicketClick={(seq) => vm.goToPayment(seq)}
+            onTicketClick={(seq) => vm.goToTicketDetail(seq)}
             moduComment={moduComment || undefined}
           />
         )}

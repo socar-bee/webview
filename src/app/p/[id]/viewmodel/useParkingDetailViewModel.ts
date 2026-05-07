@@ -42,12 +42,12 @@ export function useParkingDetailViewModel(seq: number | null, type?: ParkingLotT
     } catch {}
   }, [])
 
-  const goToPayment = useCallback(
+  /** 주차권 클릭 → 주차권 상세 페이지로 이동 (결제는 상세에서 분기) */
+  const goToTicketDetail = useCallback(
     (couponSeq: number) => {
-      if (!seq) return
-      router.push(`/p/${seq}/payment?couponSeq=${couponSeq}${carryQuery}`)
+      router.push(`/t/${couponSeq}${carryQuery}`)
     },
-    [seq, router, carryQuery]
+    [router, carryQuery]
   )
 
   /** 현장 요금 포맷: calcPrices에서 60분(1시간) 기준 찾거나 첫 항목 사용 */
@@ -68,7 +68,7 @@ export function useParkingDetailViewModel(seq: number | null, type?: ParkingLotT
     activeTab,
     setActiveTab,
     copyAddress,
-    goToPayment,
+    goToTicketDetail,
     formatCurrentFee
   }
 }
