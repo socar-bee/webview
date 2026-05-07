@@ -118,19 +118,14 @@ export function useTicketDetailViewModel({
     [router, carryQuery]
   )
 
-  /** 뒤로가기 — 주차장 상세에 시트 열린 상태로 복귀 (modu-web-app과 동일 패턴) */
+  /** 뒤로가기 — 주차장 풀페이지(/p/[seq])로 이동. pin 없으면 브라우저 history back. */
   const goBack = useCallback(() => {
     if (!pin) {
       router.back()
       return
     }
-    const params = new URLSearchParams()
-    params.set('type', pin.type)
-    params.set('id', String(pin.seq))
-    if (searchParams?.get('parkingDate')) params.set('parkingDate', searchParams.get('parkingDate')!)
-    if (durationId) params.set('durationId', durationId)
-    router.push(`/map?${params.toString()}#sheet=1`)
-  }, [pin, router, searchParams, durationId])
+    router.push(`/p/${pin.seq}${carryQuery}`)
+  }, [pin, router, carryQuery])
 
   /** 구매 버튼 클릭 — isAbleApp이면 앱 딥링크 / 외부 이동, 아니면 결제 시트 오픈 */
   const handleClickPurchase = useCallback(() => {
