@@ -595,6 +595,8 @@ function TicketStubCard({ ticket, onClick }: { ticket: TicketListItem; onClick: 
   const isDisabled = ticket.isSoldOut || !ticket.isOpen
   const isSoldOut = ticket.isSoldOut
   const isComingSoon = !ticket.isOpen && !ticket.isSoldOut
+  // 100,000원 이상이면 폰트 다운그레이드 (1,000,000 같은 큰 숫자 안전)
+  const isLarge = ticket.price >= 100000
 
   const statusLabel = isSoldOut ? '매진' : isComingSoon ? '판매예정' : '구매가능'
   const statusColor = isSoldOut ? 'bg-[#d1d5db]' : isComingSoon ? 'bg-amber-400' : 'bg-emerald-400'
@@ -657,13 +659,15 @@ function TicketStubCard({ ticket, onClick }: { ticket: TicketListItem; onClick: 
           />
         </div>
 
-        {/* 오른쪽: 가격 영역 */}
-        <div className="flex w-[100px] shrink-0 flex-col items-center justify-center gap-1.5 px-2">
+        {/* 오른쪽: 가격 영역 — 큰 금액(1M+) 안전하게 들어가도록 동적 사이징 */}
+        <div className="flex shrink-0 flex-col items-center justify-center gap-1.5 px-3">
           <p
-            className={`text-[19px] leading-none font-bold tracking-tight whitespace-nowrap ${isDisabled ? 'text-[#c8d0da]' : 'text-primary'}`}
+            className={`leading-none font-bold tracking-tight whitespace-nowrap ${
+              isLarge ? 'text-[15px]' : 'text-[18px]'
+            } ${isDisabled ? 'text-[#c8d0da]' : 'text-primary'}`}
           >
             {ticket.price.toLocaleString()}
-            <span className={`ml-0.5 text-[12px] font-medium ${isDisabled ? 'text-[#c8d0da]' : 'text-primary/80'}`}>
+            <span className={`ml-0.5 text-[11px] font-medium ${isDisabled ? 'text-[#c8d0da]' : 'text-primary/80'}`}>
               원
             </span>
           </p>
