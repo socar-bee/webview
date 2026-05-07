@@ -571,11 +571,11 @@ function TicketList({
       {hasMore && !expanded && (
         <button
           onClick={() => setExpanded(true)}
-          className="border-stroke-soft text-text-sub mt-3 flex h-[38px] w-full items-center justify-center gap-1 rounded-xl border text-[13px] font-medium"
+          className="border-primary/20 text-primary mt-2.5 flex h-[48px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-2xl border bg-white text-[14px] font-semibold shadow-[0_2px_10px_rgba(59,130,246,0.09)] transition-all hover:shadow-[0_2px_14px_rgba(59,130,246,0.14)] active:scale-[0.99]"
         >
           전체보기
-          <span className="text-text-disabled text-[12px]">({tickets.length}개)</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <span className="text-primary/60 text-[13px] font-medium">({tickets.length}개)</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="ml-0.5">
             <path
               d="M6 9l6 6 6-6"
               stroke="currentColor"
