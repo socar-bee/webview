@@ -95,9 +95,11 @@ export default function PartnerDetailView({ seq, initialDetail }: PartnerDetailV
     setDetailOpen(false)
   }
 
-  // sheet 닫힐 때 snap 초기화
+  // sheet "열림 → 닫힘" 전환 시에만 snap 리셋 (초기 mount의 false 상태로 hash snap을 덮지 않도록)
+  const prevOpenRef = useRef(detailOpen)
   useEffect(() => {
-    if (!detailOpen) setDetailSnap('peek')
+    if (prevOpenRef.current && !detailOpen) setDetailSnap('peek')
+    prevOpenRef.current = detailOpen
   }, [detailOpen])
 
   const vm = useMapViewModel({
