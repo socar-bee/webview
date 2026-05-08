@@ -19,11 +19,35 @@ interface PartnerDetailViewProps {
   initialDetail?: ParkingLotDetail
 }
 
+/**
+ * Hash 기반 시트 상태 파싱.
+ * - `#sheet=0` → 닫힘
+ * - `#sheet=1` / `#sheet=peek` → 열림 + peek
+ * - `#sheet=half` → 열림 + half
+ * - `#sheet=full` → 열림 + full (예: 추천 주차장 진입, 주차권 상세 뒤로가기)
+ */
+function parseSheetHash(hash: string): { open: boolean; snap: SheetSnap | null } {
+  const m = hash.match(/^#sheet=(.+)$/)
+  if (!m) return { open: false, snap: null }
+  const v = m[1]
+  if (v === '0') return { open: false, snap: null }
+  if (v === 'full') return { open: true, snap: 'full' }
+  if (v === 'half') return { open: true, snap: 'half' }
+  return { open: true, snap: 'peek' } // '1' / 'peek' / 그 외
+}
+
 export default function PartnerDetailView({ seq, initialDetail }: PartnerDetailViewProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  // ?snap=full 로 진입 시 시트를 full로 시작 (예: 주차권 상세 → 뒤로가기)
-  const initialSnap: SheetSnap = searchParams?.get('snap') === 'full' ? 'full' : 'peek'
+  // hash 우선, 없으면 ?snap=full 쿼리 (구버전 호환) — 둘 다 없으면 peek
+  const initialSnap: SheetSnap = (() => {
+    if (typeof window !== 'undefined') {
+      const fromHash = parseSheetHash(window.location.hash).snap
+      if (fromHash) return fromHash
+    }
+    if (searchParams?.get('snap') === 'full') return 'full'
+    return 'peek'
+  })()
   const [detailSnap, setDetailSnap] = useState<SheetSnap>(initialSnap)
   const [detailOpen, setDetailOpen] = useState(false)
 
@@ -39,9 +63,13 @@ export default function PartnerDetailView({ seq, initialDetail }: PartnerDetailV
     parkingType: 'P' as ParkingLotType
   }
 
-  // hash 동기화
+  // hash 동기화 — hash가 바뀌면 open 상태 + snap 동시 반영
   useEffect(() => {
-    const sync = () => setDetailOpen(window.location.hash === '#sheet=1')
+    const sync = () => {
+      const { open, snap } = parseSheetHash(window.location.hash)
+      setDetailOpen(open)
+      if (snap) setDetailSnap(snap)
+    }
     sync()
     window.addEventListener('hashchange', sync)
     window.addEventListener('popstate', sync)
@@ -51,12 +79,15 @@ export default function PartnerDetailView({ seq, initialDetail }: PartnerDetailV
     }
   }, [])
 
-  // 최초 진입 시 sheet 열기
+  // 최초 진입 시 sheet 열기 — hash가 없으면 initialSnap에 맞춰 설정
   useEffect(() => {
-    if (window.location.hash !== '#sheet=1') {
-      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#sheet=1`)
+    const current = parseSheetHash(window.location.hash)
+    if (!current.open) {
+      const target = `#sheet=${initialSnap === 'full' ? 'full' : initialSnap === 'half' ? 'half' : '1'}`
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${target}`)
     }
     setDetailOpen(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const closeSheet = () => {

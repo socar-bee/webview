@@ -961,7 +961,7 @@ const RecommendCard = memo(function RecommendCard({ item, index }: { item: Recom
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.1, duration: 0.35, ease: 'easeOut' }}
     >
-      <Link href={`/p/${item.seq}`} className="flex flex-col gap-3">
+      <Link href={`/p/${item.seq}#sheet=full`} className="flex flex-col gap-3">
         <div className="h-[180px] w-full overflow-hidden rounded-xl">
           {item.photos.length > 0 ? (
             <div className="scrollbar-hide flex h-full snap-x snap-mandatory overflow-x-auto">
