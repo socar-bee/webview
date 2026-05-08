@@ -185,7 +185,7 @@ export default function PartnerDetailView({ seq, initialDetail }: PartnerDetailV
         {/* Loading — 정중앙 Lottie 애니메이션 */}
         <MapPinLoader show={vm.isLoading} />
 
-        {/* ParkingDetailSheet */}
+        {/* ParkingDetailSheet — initialSnap이 full/half면 슬라이드업 생략하고 즉시 정착 */}
         <ParkingDetailSheet
           isOpen={detailOpen}
           snap={detailSnap}
@@ -193,6 +193,7 @@ export default function PartnerDetailView({ seq, initialDetail }: PartnerDetailV
           onClose={closeSheet}
           data={parkingData}
           onLocationKnown={handleLocationKnown}
+          skipMountAnimation={initialSnap !== 'peek'}
         />
       </main>
       <DockBar />

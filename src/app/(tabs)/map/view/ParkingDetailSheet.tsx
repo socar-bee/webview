@@ -32,6 +32,8 @@ interface ParkingDetailSheetProps {
   onClose: () => void
   data: ParkingDetailData | null
   onLocationKnown?: (lat: number, lng: number) => void
+  /** true면 시트 마운트 시 슬라이드업 애니메이션 생략 (예: hash로 #sheet=full 진입) */
+  skipMountAnimation?: boolean
 }
 
 type SheetTab = 'info' | 'recommend' | 'nearby'
@@ -47,7 +49,8 @@ export default function ParkingDetailSheet({
   onSnapChange,
   onClose,
   data,
-  onLocationKnown
+  onLocationKnown,
+  skipMountAnimation = false
 }: ParkingDetailSheetProps) {
   const vm = useParkingDetailViewModel(data?.seq ?? null, data?.parkingType)
   const tabsRef = useRef<HTMLDivElement>(null)
@@ -261,6 +264,7 @@ export default function ParkingDetailSheet({
       onClose={onClose}
       peekHeight={96}
       halfRatio={0.45}
+      skipMountAnimation={skipMountAnimation}
       navigationBar={<NavigationBar title={displayName} showTitle={showNavTitle} onBack={onClose} />}
       peek={
         snap !== 'full' ? (

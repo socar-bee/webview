@@ -26,6 +26,8 @@ interface AnimationSheetProps {
   children: React.ReactNode
   /** 스크롤 영역 위에 고정 오버레이 (예: 지도보기 플로팅 버튼). full 상태에서만 노출 */
   overlay?: React.ReactNode
+  /** true면 마운트 시 슬라이드업 애니메이션 생략 (예: hash로 #sheet=full 진입) */
+  skipMountAnimation?: boolean
 }
 
 // iOS 계열 바텀시트 느낌: critical damping(ratio=1.0)로 튕김 없이 타이트하게 정착
@@ -51,7 +53,8 @@ export default function AnimationSheet({
   peek,
   navigationBar,
   children,
-  overlay
+  overlay,
+  skipMountAnimation = false
 }: AnimationSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -188,6 +191,15 @@ export default function AnimationSheet({
   // vh=0이면 뷰포트 크기를 아직 모르는 것 → 화면 밖(9999)에 고정. mount 후 vh가 설정되면 올바른 위치로 애니메이션.
   const targetY = vh === 0 ? 9999 : isOpen ? getSnapY(snap) : vh
 
+  // skipMountAnimation: 첫 frame은 transition: 0으로 즉시 정착시키고, 이후엔 정상 SPRING 복귀
+  const [skipFirstTransition, setSkipFirstTransition] = useState(skipMountAnimation)
+  useEffect(() => {
+    if (!skipFirstTransition) return
+    if (vh === 0) return // vh가 결정된 직후 첫 paint를 instant로 → 다음 tick에 SPRING으로 전환
+    const t = setTimeout(() => setSkipFirstTransition(false), 50)
+    return () => clearTimeout(t)
+  }, [skipFirstTransition, vh])
+
   return (
     <>
       {/* Backdrop — 앱 프레임(480px) 내부에서만 dim. dock 영역은 dim 제외 */}
@@ -232,7 +244,7 @@ export default function AnimationSheet({
           // height=sheetHeight → dock 높이 제외. 본문 flex 레이아웃이 dock 위 영역 안에 맞게 분배됨.
           style={{ y, height: sheetHeight || '100dvh' }}
           animate={{ y: targetY }}
-          transition={SPRING}
+          transition={skipFirstTransition ? { duration: 0 } : SPRING}
           drag="y"
           dragListener={false}
           dragControls={dragControls}
