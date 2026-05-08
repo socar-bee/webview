@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import AnimationSheet, { type SheetSnap } from '@/shared/components/ui/AnimationSheet'
 import Toast from '@/shared/components/ui/Toast'
@@ -578,7 +578,7 @@ function TicketList({
       )}
       <div className="flex flex-col gap-2.5 pt-4">
         {visible.map((ticket) => (
-          <TicketStubCard key={ticket.couponSeq} ticket={ticket} onClick={() => onTicketClick(ticket.couponSeq)} />
+          <TicketStubCard key={ticket.couponSeq} ticket={ticket} onSelect={onTicketClick} />
         ))}
       </div>
       {hasMore && !expanded && (
@@ -604,7 +604,13 @@ function TicketList({
 }
 
 /* ─── TicketStubCard ─── */
-function TicketStubCard({ ticket, onClick }: { ticket: TicketListItem; onClick: () => void }) {
+const TicketStubCard = memo(function TicketStubCard({
+  ticket,
+  onSelect
+}: {
+  ticket: TicketListItem
+  onSelect: (couponSeq: number) => void
+}) {
   const isDisabled = ticket.isSoldOut || !ticket.isOpen
   const isSoldOut = ticket.isSoldOut
   const isComingSoon = !ticket.isOpen && !ticket.isSoldOut
@@ -622,7 +628,7 @@ function TicketStubCard({ ticket, onClick }: { ticket: TicketListItem; onClick: 
   return (
     <div
       className={`relative w-full ${isDisabled ? 'cursor-default' : 'cursor-pointer'}`}
-      onClick={() => !isDisabled && onClick()}
+      onClick={() => !isDisabled && onSelect(ticket.couponSeq)}
     >
       <div
         className={`flex h-[86px] w-full overflow-visible rounded-2xl border ${
@@ -689,7 +695,7 @@ function TicketStubCard({ ticket, onClick }: { ticket: TicketListItem; onClick: 
       </div>
     </div>
   )
-}
+})
 
 /* ─── Hero Placeholder — 이미지 없거나 로드 실패 시 표출 ─── */
 function HeroPlaceholder() {
@@ -944,7 +950,7 @@ function RecommendTab({ seq, lat, lng }: { seq: number; lat?: number; lng?: numb
   )
 }
 
-function RecommendCard({ item, index }: { item: RecommendParking; index: number }) {
+const RecommendCard = memo(function RecommendCard({ item, index }: { item: RecommendParking; index: number }) {
   const firstTicket = item.tickets[0]
   const extraCount = item.tickets.length - 1
 
@@ -1014,7 +1020,7 @@ function RecommendCard({ item, index }: { item: RecommendParking; index: number 
       </Link>
     </motion.div>
   )
-}
+})
 
 /* ─── NearbyTab ─── */
 function NearbyTab({ detail }: { detail: ReturnType<typeof useParkingDetailViewModel>['detail'] }) {

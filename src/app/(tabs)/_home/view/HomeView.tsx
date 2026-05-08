@@ -3,7 +3,7 @@
 import { AnimatePresence, animate, motion, useMotionValue } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 
 import Toast from '@/shared/components/ui/Toast'
 import { useRecentSearches } from '@/shared/hooks/useRecentSearches'
@@ -468,18 +468,24 @@ function RegionsSection({
                 <div className="bg-bg-soft h-3 w-14 animate-pulse rounded" />
               </div>
             ))
-          : regions
-              .slice(0, 8)
-              .map((r, i) => <RegionCard key={r.id} region={r} index={i} onClick={() => onClickRegion(r)} />)}
+          : regions.slice(0, 8).map((r, i) => <RegionCard key={r.id} region={r} index={i} onSelect={onClickRegion} />)}
       </div>
     </section>
   )
 }
 
-function RegionCard({ region, index, onClick }: { region: RecommendedRegion; index: number; onClick: () => void }) {
+const RegionCard = memo(function RegionCard({
+  region,
+  index,
+  onSelect
+}: {
+  region: RecommendedRegion
+  index: number
+  onSelect: (region: RecommendedRegion) => void
+}) {
   return (
     <motion.button
-      onClick={onClick}
+      onClick={() => onSelect(region)}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03, duration: 0.25, ease: 'easeOut' }}
@@ -507,7 +513,7 @@ function RegionCard({ region, index, onClick }: { region: RecommendedRegion; ind
       <span className="text-text-strong text-[12px] leading-tight font-semibold tracking-[-0.2px]">{region.name}</span>
     </motion.button>
   )
-}
+})
 
 /* ─── 인기 주차장 BEST (사진 가로 스크롤) ─── */
 function TopParkingsSection({
@@ -727,12 +733,12 @@ function PopularKeywordsSection({
           <div className="grid grid-cols-2 gap-x-4">
             <div className="flex flex-col">
               {col1.map((k) => (
-                <KeywordRankItem key={k.rank} keyword={k} onClick={() => onClickKeyword(k)} />
+                <KeywordRankItem key={k.rank} keyword={k} onSelect={onClickKeyword} />
               ))}
             </div>
             <div className="flex flex-col">
               {col2.map((k) => (
-                <KeywordRankItem key={k.rank} keyword={k} onClick={() => onClickKeyword(k)} />
+                <KeywordRankItem key={k.rank} keyword={k} onSelect={onClickKeyword} />
               ))}
             </div>
           </div>
@@ -742,13 +748,19 @@ function PopularKeywordsSection({
   )
 }
 
-function KeywordRankItem({ keyword, onClick }: { keyword: PopularKeyword; onClick: () => void }) {
+const KeywordRankItem = memo(function KeywordRankItem({
+  keyword,
+  onSelect
+}: {
+  keyword: PopularKeyword
+  onSelect: (keyword: PopularKeyword) => void
+}) {
   const isTop3 = keyword.rank <= 3
   const delta = keyword.wowDelta
   const trend: 'up' | 'down' | 'flat' = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
   return (
     <motion.button
-      onClick={onClick}
+      onClick={() => onSelect(keyword)}
       initial={{ opacity: 0, x: -6 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: keyword.rank * 0.03, duration: 0.2, ease: 'easeOut' }}
@@ -767,7 +779,7 @@ function KeywordRankItem({ keyword, onClick }: { keyword: PopularKeyword; onClic
       <KeywordTrendBadge trend={trend} delta={delta} />
     </motion.button>
   )
-}
+})
 
 function KeywordTrendBadge({ trend, delta }: { trend: 'up' | 'down' | 'flat'; delta: number }) {
   if (trend === 'flat') {

@@ -1,7 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { useState } from 'react'
+import { memo, useState } from 'react'
 
 import type { FavoriteParking } from '@/shared/hooks/useFavorites'
 
@@ -27,12 +27,7 @@ export default function FavoritesView() {
         <ul className="flex flex-col gap-2 px-5 pt-3 pb-10">
           <AnimatePresence initial={false}>
             {vm.favorites.map((f) => (
-              <FavoriteCard
-                key={f.seq}
-                favorite={f}
-                onClick={() => vm.goToParking(f)}
-                onRemove={() => vm.remove(f.seq)}
-              />
+              <FavoriteCard key={f.seq} favorite={f} onSelect={vm.goToParking} onRemove={vm.remove} />
             ))}
           </AnimatePresence>
         </ul>
@@ -150,14 +145,14 @@ function ListSkeleton() {
 }
 
 /* ─── Favorite Card ─── */
-function FavoriteCard({
+const FavoriteCard = memo(function FavoriteCard({
   favorite,
-  onClick,
+  onSelect,
   onRemove
 }: {
   favorite: FavoriteParking
-  onClick: () => void
-  onRemove: () => void
+  onSelect: (favorite: FavoriteParking) => void
+  onRemove: (seq: number) => void
 }) {
   return (
     <motion.li
@@ -168,7 +163,10 @@ function FavoriteCard({
       transition={{ duration: 0.22, ease: 'easeOut' }}
       className="bg-bg-white border-stroke-soft flex items-center gap-3 rounded-2xl border p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
     >
-      <button onClick={onClick} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left">
+      <button
+        onClick={() => onSelect(favorite)}
+        className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
+      >
         <FavoriteThumbnail src={favorite.image} alt={favorite.name} />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <p className="text-text-strong truncate text-[15px] leading-tight font-semibold tracking-[-0.2px]">
@@ -183,7 +181,7 @@ function FavoriteCard({
         </div>
       </button>
       <button
-        onClick={onRemove}
+        onClick={() => onRemove(favorite.seq)}
         aria-label={`${favorite.name} 즐겨찾기 해제`}
         className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-transform active:scale-90"
       >
@@ -199,7 +197,7 @@ function FavoriteCard({
       </button>
     </motion.li>
   )
-}
+})
 
 /* ─── Thumbnail with image-error fallback ─── */
 function FavoriteThumbnail({ src, alt }: { src?: string; alt: string }) {
