@@ -39,14 +39,15 @@ function parseSheetHash(hash: string): { open: boolean; snap: SheetSnap | null }
 export default function PartnerDetailView({ seq, initialDetail }: PartnerDetailViewProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  // hash 우선, 없으면 ?snap=full 쿼리 (구버전 호환) — 둘 다 없으면 peek
+  // /p/[id] 진입은 기본 'full'. hash로 명시(half/peek/full)하면 그 값 우선.
   const initialSnap: SheetSnap = (() => {
     if (typeof window !== 'undefined') {
       const fromHash = parseSheetHash(window.location.hash).snap
       if (fromHash) return fromHash
     }
-    if (searchParams?.get('snap') === 'full') return 'full'
-    return 'peek'
+    if (searchParams?.get('snap') === 'peek') return 'peek'
+    if (searchParams?.get('snap') === 'half') return 'half'
+    return 'full'
   })()
   const [detailSnap, setDetailSnap] = useState<SheetSnap>(initialSnap)
   const [detailOpen, setDetailOpen] = useState(false)

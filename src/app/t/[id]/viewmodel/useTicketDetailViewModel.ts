@@ -118,15 +118,14 @@ export function useTicketDetailViewModel({
     [router, carryQuery]
   )
 
-  /** 뒤로가기 — 주차장 풀페이지(/p/[seq])로 이동, 시트는 full로 펼쳐서 진입. */
+  /** 뒤로가기 — 주차장 풀페이지(/p/[seq])로 이동, hash로 시트 full 상태 지정. */
   const goBack = useCallback(() => {
     if (!pin) {
       router.back()
       return
     }
-    // carryQuery: "?parkingDate=...&durationId=..." 형태
-    const sep = carryQuery ? '&' : '?'
-    router.push(`/p/${pin.seq}${carryQuery}${sep}snap=full`)
+    // carryQuery: "?parkingDate=...&durationId=..." 형태 → hash는 그 뒤
+    router.push(`/p/${pin.seq}${carryQuery}#sheet=full`)
   }, [pin, router, carryQuery])
 
   /** 구매 버튼 클릭 — isAbleApp이면 앱 딥링크 / 외부 이동, 아니면 결제 시트 오픈 */
