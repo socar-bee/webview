@@ -629,61 +629,60 @@ const TicketStubCard = memo(function TicketStubCard({
       ? `${ticket.usingDateLabel} ${ticket.usingTimeLabel}`
       : ticket.nextTimeLabel
 
+  // 카드/연결부 bg는 활성/비활성 모두 흰색으로 통일 — disabled는 border + 텍스트로만 구분
+  // (disabled에 gray bg를 주면 가운데 연결부가 회색 스트립처럼 보여 어색함)
+  const cardBg = 'bg-white'
+  const cardBorder = isDisabled ? 'border-[#e9ebef]' : 'border-primary/20'
+  const cardShadow = isDisabled ? '' : 'shadow-[0_2px_10px_rgba(59,130,246,0.09)]'
+  const dashBorder = 'border-primary/45'
+
   return (
     <div
       className={`relative w-full ${isDisabled ? 'cursor-default' : 'cursor-pointer'}`}
       onClick={() => !isDisabled && onSelect(ticket.couponSeq)}
     >
-      <div
-        className={`flex h-[86px] w-full overflow-visible rounded-2xl border ${
-          isDisabled
-            ? 'border-[#e9ebef] bg-[#f7f8fa]'
-            : 'border-primary/20 bg-white shadow-[0_2px_10px_rgba(59,130,246,0.09)]'
-        }`}
-      >
+      {/* 3분할: [정보] · [연결부 (카드 bg와 동일)] · [가격]
+       *  - 연결부 bg를 카드 bg와 일치 → 색 단절 없이 매끈하게 이어짐
+       *  - 노치는 border + 카드 bg fill로 카드 영역과 자연스럽게 연결 */}
+      <div className="flex h-[86px] w-full">
         {/* 왼쪽: 정보 영역 */}
-        <div className="flex flex-1 flex-col justify-center gap-1 px-4">
-          {/* 상태 */}
+        <div
+          className={`flex flex-1 flex-col justify-center gap-1 rounded-l-2xl border-y border-l px-4 ${cardBg} ${cardBorder} ${cardShadow}`}
+        >
           <div className="flex items-center gap-1.5">
             <span className={`h-[6px] w-[6px] shrink-0 rounded-full ${statusColor}`} />
             <span className={`text-[11px] font-medium ${isDisabled ? 'text-[#b0b8c1]' : 'text-[#64748b]'}`}>
               {statusLabel}
             </span>
           </div>
-          {/* 이름 */}
           <p
             className={`truncate text-[15px] leading-tight font-bold ${isDisabled ? 'text-[#b0b8c1]' : 'text-[#1e293b]'}`}
           >
             {ticket.couponName}
           </p>
-          {/* 날짜/시간 */}
           {descLine && (
             <p className={`truncate text-[11px] ${isDisabled ? 'text-[#c8d0da]' : 'text-[#94a3b8]'}`}>{descLine}</p>
           )}
         </div>
 
-        {/* 세로 뜯는 선 — 상/하단 반원 노치 + 점선 */}
-        <div className="relative flex flex-col items-center py-3">
-          {/* 상단 노치 */}
+        {/* 가운데 연결부 — bg는 카드와 일치(상태별), 점선만 별도 색상 */}
+        <div className={`relative w-5 shrink-0 ${cardBg}`}>
+          {/* 상단 반원 노치 — bg를 카드 bg로 채워서 카드 영역과 매끈하게 이어짐 */}
           <div
-            className={`absolute -top-[1px] h-[10px] w-[20px] rounded-b-full border-x border-b ${
-              isDisabled ? 'bg-bg-weak border-[#e9ebef]' : 'border-primary/20 bg-bg-white'
-            }`}
+            className={`absolute -top-[1px] left-0 h-[9px] w-full rounded-b-full border-x border-b ${cardBorder} ${cardBg}`}
           />
           {/* 점선 */}
+          <div className={`absolute inset-y-2.5 left-1/2 w-px -translate-x-1/2 border-l border-dashed ${dashBorder}`} />
+          {/* 하단 반원 노치 */}
           <div
-            className={`h-full w-px border-l border-dashed ${isDisabled ? 'border-[#e9ebef]' : 'border-primary/20'}`}
-          />
-          {/* 하단 노치 */}
-          <div
-            className={`absolute -bottom-[1px] h-[10px] w-[20px] rounded-t-full border-x border-t ${
-              isDisabled ? 'bg-bg-weak border-[#e9ebef]' : 'border-primary/20 bg-bg-white'
-            }`}
+            className={`absolute -bottom-[1px] left-0 h-[9px] w-full rounded-t-full border-x border-t ${cardBorder} ${cardBg}`}
           />
         </div>
 
-        {/* 오른쪽: 가격 영역 — 큰 금액(1M+) 안전하게 들어가도록 동적 사이징 */}
-        <div className="flex shrink-0 flex-col items-center justify-center gap-1.5 px-3">
+        {/* 오른쪽: 가격 영역 — 고정폭(컴팩트), 큰 금액(1M+)은 폰트 다운그레이드 */}
+        <div
+          className={`flex w-[92px] shrink-0 flex-col items-center justify-center gap-1 rounded-r-2xl border-y border-r px-2 ${cardBg} ${cardBorder} ${cardShadow}`}
+        >
           <p
             className={`leading-none font-bold tracking-tight whitespace-nowrap ${
               isLarge ? 'text-[15px]' : 'text-[18px]'
@@ -768,6 +767,34 @@ function InfoTab({
         </div>
       )}
 
+      {/* 주소 — 최상단 */}
+      {address && (
+        <InfoCard
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                fill="none"
+              />
+            </svg>
+          }
+          title="주소"
+        >
+          <button
+            className="flex w-full min-w-0 cursor-pointer items-center gap-1 text-left"
+            onClick={() => onCopyAddress(address)}
+          >
+            <span className="text-text-strong flex-1 text-[13px]">{address}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0">
+              <rect x="9" y="9" width="11" height="11" rx="1.5" stroke="#A3A3A3" strokeWidth="1.5" />
+              <path d="M5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h10a1 1 0 011 1v1" stroke="#A3A3A3" strokeWidth="1.5" />
+            </svg>
+          </button>
+        </InfoCard>
+      )}
+
       {/* 요금 안내 */}
       {prices.length > 0 && prices[0].contents.length > 0 && (
         <InfoCard
@@ -824,34 +851,6 @@ function InfoTab({
           <span className="text-text-sub shrink-0 text-[14px]">운영 시간</span>
           <span className="text-text-strong text-right text-[14px]">{operationTime}</span>
         </div>
-      )}
-
-      {/* 주소 */}
-      {address && (
-        <InfoCard
-          icon={
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                fill="none"
-              />
-            </svg>
-          }
-          title="주소"
-        >
-          <button
-            className="flex w-full min-w-0 cursor-pointer items-center gap-1 text-left"
-            onClick={() => onCopyAddress(address)}
-          >
-            <span className="text-text-strong flex-1 text-[13px]">{address}</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0">
-              <rect x="9" y="9" width="11" height="11" rx="1.5" stroke="#A3A3A3" strokeWidth="1.5" />
-              <path d="M5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h10a1 1 0 011 1v1" stroke="#A3A3A3" strokeWidth="1.5" />
-            </svg>
-          </button>
-        </InfoCard>
       )}
 
       {/* 추가 정보 (options) */}
