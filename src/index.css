@@ -1,0 +1,182 @@
+@import 'tailwindcss';
+
+@config '../tailwind.config.js';
+
+@layer base {
+  html {
+    font-family: 'Roboto', 'Noto Sans KR', sans-serif;
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    @apply font-regular text-text-090;
+    box-sizing: border-box;
+    -ms-overflow-style: none;
+    overscroll-behavior-y: contain;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus,
+  button:focus {
+    outline: none;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold;
+  }
+
+  .header-1 {
+    @apply text-36 leading-54;
+  }
+  .header-2 {
+    @apply text-30 leading-40;
+  }
+  .header-3 {
+    @apply text-24 leading-34;
+  }
+
+  .body-1 {
+    @apply text-20 leading-30;
+  }
+  .body-2 {
+    @apply text-17 leading-26;
+  }
+  .body-3 {
+    @apply text-16 leading-24;
+  }
+
+  .caption-1 {
+    @apply text-15 leading-22 whitespace-pre-line;
+  }
+  .caption-2 {
+    @apply text-14 leading-22 whitespace-pre-line;
+  }
+  .caption-3 {
+    @apply text-[13px] leading-[20px] whitespace-pre-line;
+  }
+
+  .tint-1 {
+    @apply text-12 leading-18;
+  }
+  .tint-2 {
+    @apply text-10 leading-12;
+  }
+  .border-100 {
+    @apply border border-dashed;
+  }
+
+  .border-200 {
+    @apply border border-solid;
+  }
+
+  .border-300 {
+    @apply border-2 border-solid;
+  }
+  .border-400 {
+    @apply border-[10px] border-solid;
+  }
+  .ellipsis {
+    @apply w-full overflow-hidden text-ellipsis whitespace-nowrap;
+  }
+
+  .loading-bar-container {
+    width: 100%;
+    height: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .loading-bar {
+    position: absolute;
+    width: 30px;
+    height: 4px;
+    background: #96eff0;
+    animation: slide 7s cubic-bezier(0.45, 0, 0.45, 1) infinite;
+    border-radius: 75px;
+  }
+  iframe {
+    border: none;
+  }
+  @keyframes slide {
+    0% {
+      left: 0;
+      background: #96eff0;
+    }
+    10% {
+      left: 0;
+    }
+    40%,
+    50%,
+    60% {
+      left: calc(100% - 30px);
+      background: #0099ff;
+    }
+    90% {
+      left: 0;
+    }
+    100% {
+      left: 0;
+    }
+  }
+}
+
+@layer components {
+  .btn-full {
+    @apply w-full rounded-md;
+  }
+  .spinner-container {
+    @apply flex items-center justify-center;
+  }
+  .backdrop {
+    @apply bg-dim-050 fixed top-1/2 left-1/2 z-150 h-full w-full max-w-[768px] -translate-x-1/2 -translate-y-1/2;
+  }
+  .image-detail-backdrop {
+    @apply bg-dim-090 fixed top-1/2 left-1/2 z-150 h-full w-full max-w-[768px] -translate-x-1/2 -translate-y-1/2;
+  }
+  .modal-container {
+    @apply fixed top-1/2 left-1/2 z-170 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center;
+  }
+  .modal {
+    @apply bg-010 flex w-[328px] min-w-[288px] flex-col items-center justify-center rounded-xl px-3 pb-4;
+  }
+  .radio {
+    @apply mr-3 h-[18px] w-[18px] appearance-none rounded-full transition-all duration-500;
+  }
+  .radio-checked {
+    @apply border-main-050 border-[0.4em] border-solid;
+  }
+  .check {
+    @apply border-050 mr-2 h-[18px] w-[18px] appearance-none rounded-sm border-[1.5px] bg-contain focus:outline-none;
+  }
+  .bottom-sheet-container {
+    @apply bg-010 fixed bottom-[-100%] left-1/2 z-170 flex w-full max-w-[768px] -translate-x-1/2 flex-col rounded-t-[20px] pb-3 duration-300;
+  }
+  .bottom-sheet-show {
+    @apply bottom-0;
+  }
+  .bottom-sheet-content {
+    @apply flex w-full flex-col items-center justify-center text-center;
+  }
+  .list-style-desc {
+    @apply before:text-text-070 flex before:mr-1 before:content-['•'];
+  }
+  .list-style-desc-car {
+    @apply before:text-text-090 flex before:mr-1 before:content-['•'];
+  }
+  .section {
+    @apply border-020 bg-010 py-6 [&:not(:last-child)]:border-b-[10px];
+  }
+}
